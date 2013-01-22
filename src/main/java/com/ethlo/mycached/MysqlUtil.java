@@ -92,8 +92,9 @@ public class MysqlUtil
 		});
 	}
 
-	private void createTable(String dbName)
+	public void createTable(String dbName)
 	{
+		Assert.hasLength(dbName, "dbName cannot be empty");
 		tpl.update("CREATE TABLE IF NOT EXISTS " + dbName + "(" +
 			"mkey VARCHAR(255) NOT NULL PRIMARY KEY, " +
 			"mvalue MEDIUMBLOB NOT NULL, " +

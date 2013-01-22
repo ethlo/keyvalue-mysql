@@ -5,7 +5,25 @@
 	<artifactId>mycached</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<name>MySQL Memcached client</name>
+	<scm>
+	  	<connection>scm:git:git@github.com:ethlo/mycached.git</connection>
+  		<developerConnection>scm:git:git@github.com:ethlo/mycached.git</developerConnection>
+  		<url>http://github.com/ethlo/mycached</url>
+ 	</scm>
+ 	<distributionManagement>
+		<repository>
+			<id>ethlo-repo</id>
+			<url>scp://scp.domeneshop.no//home/3/e/ethlo/www/maven</url>
+		</repository>
+  	</distributionManagement>
 	<build>
+		<extensions>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh</artifactId>
+				<version>1.0</version>
+			</extension>
+		</extensions>  
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -60,6 +78,11 @@
 		  	<version>3.2.0.RELEASE</version>
 		</dependency>
 		<dependency>
+			<groupId>com.jolbox</groupId>
+			<artifactId>bonecp</artifactId>
+			<version>0.7.1.RELEASE</version>
+		</dependency>
+		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
@@ -70,6 +93,12 @@
 			<artifactId>fest-assert-core</artifactId>
 			<scope>test</scope>
 			<version>2.0M8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>3.2.0.RELEASE</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

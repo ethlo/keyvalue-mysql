@@ -1,7 +1,6 @@
 package com.ethlo.mycached;
 
 
-import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import net.rubyeye.xmemcached.MemcachedClient;
@@ -9,6 +8,8 @@ import net.rubyeye.xmemcached.exception.MemcachedException;
 
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.util.Assert;
+
+import com.ethlo.keyvalue.CasHolder;
 
 /**
  * 
@@ -39,7 +40,7 @@ public class MyCachedClientImpl implements MyCachedClient
 			final byte[] raw = this.client.get(mmKey);
 			return CompressionUtil.uncompress(raw);
 		}
-		catch (TimeoutException | InterruptedException | MemcachedException | IOException e)
+		catch (TimeoutException | InterruptedException | MemcachedException e)
 		{
 			throw new MyCachedIoException(e.getMessage(), e);
 		}
@@ -52,24 +53,24 @@ public class MyCachedClientImpl implements MyCachedClient
 	}
 
 	@Override
-	public boolean set(byte[] key, byte[] value)
+	public void put(byte[] key, byte[] value)
 	{
 		try
 		{
-			return this.client.set(getKey(key), 0, CompressionUtil.compress(value));
+			this.client.set(getKey(key), 0, CompressionUtil.compress(value));
 		}
-		catch (TimeoutException | InterruptedException | MemcachedException | IOException e)
+		catch (TimeoutException | InterruptedException | MemcachedException e)
 		{
 			throw new MyCachedIoException(e.getMessage(), e);
 		}
 	}
 
 	@Override
-	public boolean delete(byte[] key)
+	public void delete(byte[] key)
 	{
 		try
 		{
-			return this.client.delete(getKey(key));
+			this.client.delete(getKey(key));
 		}
 		catch (TimeoutException | InterruptedException | MemcachedException e)
 		{
@@ -81,5 +82,23 @@ public class MyCachedClientImpl implements MyCachedClient
 	public void clear()
 	{
 
+	}
+
+	@Override
+	public void close()
+	{
+		
+	}
+
+	@Override
+	public CasHolder getCas(byte[] key)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void putCas(CasHolder cas)
+	{
+		throw new UnsupportedOperationException();
 	}
 }

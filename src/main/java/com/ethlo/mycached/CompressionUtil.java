@@ -7,6 +7,7 @@ import java.io.IOException;
 import org.apache.commons.io.IOUtils;
 import org.iq80.snappy.SnappyInputStream;
 import org.iq80.snappy.SnappyOutputStream;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 /**
  * 
@@ -14,7 +15,7 @@ import org.iq80.snappy.SnappyOutputStream;
  */
 public class CompressionUtil
 {
-	public static byte[] uncompress(byte[] compressed) throws IOException
+	public static byte[] uncompress(byte[] compressed)
 	{
 		if (compressed == null)
 		{
@@ -22,16 +23,30 @@ public class CompressionUtil
 		}
 		
 		final ByteArrayInputStream bin = new ByteArrayInputStream(compressed);
-		final SnappyInputStream in = new SnappyInputStream(bin);
-		return IOUtils.toByteArray(in);
+		try
+		{
+			final SnappyInputStream in = new SnappyInputStream(bin);
+			return IOUtils.toByteArray(in);
+		}
+		catch (IOException exc)
+		{
+			throw new DataAccessResourceFailureException(exc.getMessage(), exc);
+		}
 	}
 
-	public static byte[] compress(byte[] data) throws IOException
+	public static byte[] compress(byte[] data)
 	{
-		final ByteArrayOutputStream bout = new ByteArrayOutputStream();
-		final SnappyOutputStream out = new SnappyOutputStream(bout);
-		out.write(data);
-		out.close();
-		return bout.toByteArray();
+		try
+		{
+			final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+			final SnappyOutputStream out = new SnappyOutputStream(bout);
+			out.write(data);
+			out.close();
+			return bout.toByteArray();
+		}
+		catch (IOException exc)
+		{
+			throw new DataAccessResourceFailureException(exc.getMessage(), exc);
+		}
 	}
 }

@@ -1,16 +1,11 @@
 package com.ethlo.mycached;
 
+import com.ethlo.keyvalue.CasKeyValueDb;
+
 /**
  * 
  * @author Morten Haraldsen
  */
-public interface MyCachedClient
+public interface MyCachedClient extends CasKeyValueDb
 {
-	byte[] get(byte[] key);
-
-	boolean set(byte[] key, byte[] value);
-
-	boolean delete(byte[] key);
-
-	void clear();
 }
