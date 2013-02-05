@@ -34,7 +34,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient
 	private final String deleteSql;
 	private final String clearSql;
 	private RowMapper<byte[]> rowMapper;
-	private RowMapper<CasHolder> casRowMapper;
+	private RowMapper<CasHolder<byte[], byte[], Long>> casRowMapper;
 	
 	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource)
 	{
@@ -58,15 +58,15 @@ public class LegacyMyCachedClientImpl implements MyCachedClient
 			}			
 		};
 		
-		this.casRowMapper = new RowMapper<CasHolder>()
+		this.casRowMapper = new RowMapper<CasHolder<byte[], byte[], Long>>()
 		{
 			@Override
-			public CasHolder mapRow(ResultSet rs, int rowNum) throws SQLException
+			public CasHolder<byte[], byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
 				final byte[] key = Base64.decodeBase64(rs.getString(1));
 				final byte[] value = rs.getBytes(2);
 				final long cas = rs.getLong(3);
-				return new CasHolder(cas, key, value);
+				return new CasHolder<byte[], byte[], Long>(cas, key, value);
 			}			
 		};
 	}
@@ -137,7 +137,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient
 	}
 
 	@Override
-	public CasHolder getCas(final byte[] key)
+	public CasHolder<byte[], byte[], Long> getCas(final byte[] key)
 	{
 		final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
 		{
@@ -153,7 +153,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient
 	}
 
 	@Override
-	public void putCas(final CasHolder cas)
+	public void putCas(final CasHolder<byte[], byte[], Long> cas)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{

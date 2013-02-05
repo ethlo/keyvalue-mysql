@@ -48,8 +48,7 @@ public class MyCachedClientImpl implements MyCachedClient
 
 	private String getKey(byte[] key)
 	{
-		//return "@@" + this.schemaName + "_" + this.tableName + "." + Base64.encodeBase64String(key);
-		return this.tableName + "." + Base64.encodeBase64String(key);
+		return "@@" + this.schemaName + "_" + this.tableName + "." + Base64.encodeBase64String(key);
 	}
 
 	@Override
@@ -91,13 +90,13 @@ public class MyCachedClientImpl implements MyCachedClient
 	}
 
 	@Override
-	public CasHolder getCas(byte[] key)
+	public CasHolder<byte[], byte[], Long> getCas(byte[] key)
 	{
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void putCas(CasHolder cas)
+	public void putCas(CasHolder<byte[], byte[], Long> cas)
 	{
 		throw new UnsupportedOperationException();
 	}
