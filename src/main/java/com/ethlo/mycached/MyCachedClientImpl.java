@@ -10,6 +10,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.springframework.util.Assert;
 
 import com.ethlo.keyvalue.CasHolder;
+import com.ethlo.keyvalue.WriteBatchWrapper;
 
 /**
  * 
@@ -99,5 +100,24 @@ public class MyCachedClientImpl implements MyCachedClient
 	public void putCas(CasHolder<byte[], byte[], Long> cas)
 	{
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public WriteBatchWrapper<byte[], byte[], Long> getBatchWrapper()
+	{
+		return new WriteBatchWrapper<byte[], byte[], Long>()
+		{
+			@Override
+			public void close() throws Exception{}
+			
+			@Override
+			protected void doPut(CasHolder<byte[], byte[], Long> casHolder)
+			{
+				put(casHolder);
+			}
+			
+			@Override
+			protected void doFlush(){}
+		};
 	}
 }

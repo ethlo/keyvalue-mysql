@@ -96,11 +96,11 @@ public class MysqlUtil
 	{
 		Assert.hasLength(dbName, "dbName cannot be empty");
 		tpl.update("CREATE TABLE IF NOT EXISTS " + dbName + "(" +
-			"mkey VARCHAR(255) NOT NULL PRIMARY KEY, " +
+			"mkey VARBINARY(255) NOT NULL PRIMARY KEY, " +
 			"mvalue MEDIUMBLOB NOT NULL, " +
-			"cas_column BIGINT(20), " +
-			"expire_time_column INT(11), " +
-			"flags INT(11)) " +
+			"cas_column INT NOT NULL, " +
+			"expire_time_column INT, " +
+			"flags INT) " +
 			"ENGINE=INNODB", new TreeMap<String, String>());
 	}
 
