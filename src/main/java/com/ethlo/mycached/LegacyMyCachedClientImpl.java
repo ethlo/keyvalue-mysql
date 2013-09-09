@@ -1,6 +1,7 @@
 package com.ethlo.mycached;
 
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,7 +33,7 @@ import com.ethlo.keyvalue.WriteBatchWrapper;
  * 
  * @author mha
  */
-public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableKeyValueDb<byte[], byte[]>
+public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableKeyValueDb<ByteBuffer, byte[]>
 {
 	private JdbcTemplate tpl;
 	
@@ -44,7 +45,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 	private final String deleteSql;
 	private final String clearSql;
 	private RowMapper<byte[]> rowMapper;
-	private RowMapper<CasHolder<byte[], byte[], Long>> casRowMapper;
+	private RowMapper<CasHolder<ByteBuffer, byte[], Long>> casRowMapper;
 	
 	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource)
 	{
@@ -69,21 +70,21 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 			}			
 		};
 		
-		this.casRowMapper = new RowMapper<CasHolder<byte[], byte[], Long>>()
+		this.casRowMapper = new RowMapper<CasHolder<ByteBuffer, byte[], Long>>()
 		{
 			@Override
-			public CasHolder<byte[], byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
+			public CasHolder<ByteBuffer, byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
 				final byte[] key = Base64.decodeBase64(rs.getString(1));
 				final byte[] value = CompressionUtil.uncompress(rs.getBytes(2));
 				final long cas = rs.getLong(3);
-				return new CasHolder<byte[], byte[], Long>(cas, key, value);
+				return new CasHolder<ByteBuffer, byte[], Long>(cas, ByteBuffer.wrap(key), value);
 			}			
 		};
 	}
 	
 	@Override
-	public byte[] get(final byte[] key)
+	public byte[] get(final ByteBuffer key)
 	{
 		final PreparedStatementCreator getPsc = new PreparedStatementCreator()
 		{
@@ -98,13 +99,13 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 		return DataAccessUtils.singleResult(tpl.query(getPsc, rowMapper));
 	}
 
-	private String getKey(byte[] key)
+	private String getKey(ByteBuffer key)
 	{
-		return Base64.encodeBase64String(key);
+		return Base64.encodeBase64String(key.array());
 	}
 	
 	@Override
-	public void put(final byte[] key, final byte[] value)
+	public void put(final ByteBuffer key, final byte[] value)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{
@@ -121,7 +122,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 	}
 
 	@Override
-	public void delete(byte[] key)
+	public void delete(ByteBuffer key)
 	{
 		tpl.update(deleteSql, Collections.singletonMap("key", getKey(key)));
 	}
@@ -147,7 +148,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 	}
 
 	@Override
-	public CasHolder<byte[], byte[], Long> getCas(final byte[] key)
+	public CasHolder<ByteBuffer, byte[], Long> getCas(final ByteBuffer key)
 	{
 		final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
 		{
@@ -163,7 +164,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 	}
 
 	@Override
-	public void putCas(final CasHolder<byte[], byte[], Long> cas)
+	public void putCas(final CasHolder<ByteBuffer, byte[], Long> cas)
 	{
 		if (cas.getCasValue() != null)
 		{
@@ -175,7 +176,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 		}
 	}
 
-	private void insertNewDueToNullCasValue(final CasHolder<byte[], byte[], Long> cas)
+	private void insertNewDueToNullCasValue(final CasHolder<ByteBuffer, byte[], Long> cas)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{
@@ -192,7 +193,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 		tpl.update(creator);
 	}
 
-	private void updateWithNonNullCasValue(final CasHolder<byte[], byte[], Long> cas)
+	private void updateWithNonNullCasValue(final CasHolder<ByteBuffer, byte[], Long> cas)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{
@@ -216,17 +217,17 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 	}
 
 	@Override
-	public WriteBatchWrapper<byte[], byte[], Long> getBatchWrapper()
+	public WriteBatchWrapper<ByteBuffer, byte[], Long> getBatchWrapper()
 	{
 		return new WriteBatchWrapperDataHolder();
 	}
 	
-	class WriteBatchWrapperDataHolder extends WriteBatchWrapper<byte[], byte[], Long>
+	class WriteBatchWrapperDataHolder extends WriteBatchWrapper<ByteBuffer, byte[], Long>
 	{
-		private List<CasHolder<byte[], byte[], Long>> data = new ArrayList<>();
+		private List<CasHolder<ByteBuffer, byte[], Long>> data = new ArrayList<>();
 		
 		@Override
-		public void doPut(CasHolder<byte[], byte[], Long> casHolder)
+		public void doPut(CasHolder<ByteBuffer, byte[], Long> casHolder)
 		{
 			data.add(casHolder);
 		}
@@ -241,7 +242,7 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 				@Override
 				public Void doInTransaction(TransactionStatus status)
 				{
-					for (CasHolder<byte[], byte[], Long> entry : data)
+					for (CasHolder<ByteBuffer, byte[], Long> entry : data)
 					{
 						putCas(entry);
 					}
