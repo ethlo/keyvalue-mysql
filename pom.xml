@@ -16,6 +16,13 @@
 			<url>scp://scp.domeneshop.no//home/3/e/ethlo/www/maven</url>
 		</repository>
   	</distributionManagement>
+  	<repositories>
+  		<repository>
+  			<id>ethlo-snapshots</id>
+  			<name>ethlo snapshots</name>
+  			<url>http://ethlo.com/maven</url>
+  		</repository>
+  	</repositories>
 	<build>
 		<extensions>
 			<extension>
