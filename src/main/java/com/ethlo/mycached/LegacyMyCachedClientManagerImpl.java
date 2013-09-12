@@ -1,19 +1,23 @@
 package com.ethlo.mycached;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.util.DigestUtils;
+
+import com.ethlo.keyvalue.BatchCasKeyValueDb;
+import com.ethlo.keyvalue.KeyValueDbManager;
 
 /**
  * 
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientManagerImpl implements MyCachedClientManager
+public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteBuffer, byte[], BatchCasKeyValueDb<ByteBuffer,byte[], Long>>
 {
 	private MysqlUtil mysqlUtil;
 	private DataSource dataSource;
@@ -25,23 +29,21 @@ public class LegacyMyCachedClientManagerImpl implements MyCachedClientManager
 	}
 	
 	@Override
-	public MyCachedClient open(String tableName, boolean allowCreate)
+	public BatchCasKeyValueDb<ByteBuffer,byte[],Long> createMainDb(String tableName, boolean allowCreate)
 	{
 		if (tableName.length() > 64)
 		{
 			tableName = "md5_" + Hex.encodeHexString(DigestUtils.md5Digest(tableName.getBytes(StandardCharsets.UTF_8))).substring(10);
 		}
 		
-		if (allowCreate)
+		if (! allowCreate && !this.mysqlUtil.tableExists(tableName))
+		{
+			throw new DataAccessResourceFailureException("No such database: " + tableName);
+		}
+		else
 		{
 			this.mysqlUtil.createTable(tableName);
 		}
 		return new LegacyMyCachedClientImpl(tableName, dataSource);
-	}
-
-	@Override
-	public List<String> list()
-	{
-		return null;
 	}
 }

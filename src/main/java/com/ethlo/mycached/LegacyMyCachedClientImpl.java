@@ -6,9 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -18,22 +16,18 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
-import com.ethlo.keyvalue.BatchUpdatableKeyValueDb;
+import com.ethlo.keyvalue.BatchCasKeyValueDb;
+import com.ethlo.keyvalue.BatchCasWriteWrapper;
 import com.ethlo.keyvalue.CasHolder;
-import com.ethlo.keyvalue.WriteBatchWrapper;
 
 /**
  * Works by using standard SQL for handling data operations instead of the MySql-MemCached interface
  * 
- * @author mha
+ * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableKeyValueDb<ByteBuffer, byte[]>
+public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, byte[], Long>
 {
 	private JdbcTemplate tpl;
 	
@@ -217,65 +211,11 @@ public class LegacyMyCachedClientImpl implements MyCachedClient, BatchUpdatableK
 	}
 
 	@Override
-	public WriteBatchWrapper<ByteBuffer, byte[], Long> getBatchWrapper()
+	public void flush(final BatchCasWriteWrapper<ByteBuffer, byte[], Long> batch)
 	{
-		return new WriteBatchWrapperDataHolder();
-	}
-	
-	class WriteBatchWrapperDataHolder extends WriteBatchWrapper<ByteBuffer, byte[], Long>
-	{
-		private List<CasHolder<ByteBuffer, byte[], Long>> data = new ArrayList<>();
-		
-		@Override
-		public void doPut(CasHolder<ByteBuffer, byte[], Long> casHolder)
+		for (CasHolder<ByteBuffer, byte[], Long> entry : batch.data())
 		{
-			data.add(casHolder);
-		}
-		
-		@Override
-		public void doFlush()
-		{
-			final PlatformTransactionManager txnManager = null;
-			final TransactionTemplate txnTpl = new TransactionTemplate(txnManager);
-			txnTpl.execute(new TransactionCallback<Void>()
-			{
-				@Override
-				public Void doInTransaction(TransactionStatus status)
-				{
-					for (CasHolder<ByteBuffer, byte[], Long> entry : data)
-					{
-						putCas(entry);
-					}
-					return null;
-				}
-			});
-		}
-		
-		public void close()
-		{
-			data.clear();
-		}
-		
-		public class Entry<K, V>
-		{
-			private K key;
-			private V value;
-
-			public Entry(K key, V value)
-			{
-				this.key = key;
-				this.value = value;
-			}
-			
-			public K getKey()
-			{
-				return this.key;
-			}
-
-			public V getValue()
-			{
-				return this.value;
-			}
+			putCas(entry);
 		}
 	}
 }

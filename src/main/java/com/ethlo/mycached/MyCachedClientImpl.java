@@ -10,14 +10,15 @@ import net.rubyeye.xmemcached.exception.MemcachedException;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.util.Assert;
 
+import com.ethlo.keyvalue.BatchCasKeyValueDb;
+import com.ethlo.keyvalue.BatchCasWriteWrapper;
 import com.ethlo.keyvalue.CasHolder;
-import com.ethlo.keyvalue.WriteBatchWrapper;
 
 /**
  * 
  * @author mha
  */
-public class MyCachedClientImpl implements MyCachedClient
+public class MyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer,byte[], Long>
 {
 	private MemcachedClient client;
 	private String schemaName;
@@ -94,31 +95,21 @@ public class MyCachedClientImpl implements MyCachedClient
 	@Override
 	public CasHolder<ByteBuffer, byte[], Long> getCas(ByteBuffer key)
 	{
+		// TODO:
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void putCas(CasHolder<ByteBuffer, byte[], Long> cas)
 	{
+		// TODO:
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public WriteBatchWrapper<byte[], byte[], Long> getBatchWrapper()
+	public void flush(BatchCasWriteWrapper<ByteBuffer, byte[], Long> wrapper)
 	{
-		return new WriteBatchWrapper<byte[], byte[], Long>()
-		{
-			@Override
-			public void close() throws Exception{}
-			
-			@Override
-			protected void doPut(CasHolder<byte[], byte[], Long> casHolder)
-			{
-				put(casHolder);
-			}
-			
-			@Override
-			protected void doFlush(){}
-		};
+		// TODO:
+		throw new UnsupportedOperationException();
 	}
 }

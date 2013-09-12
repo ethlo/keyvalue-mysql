@@ -104,7 +104,7 @@ public class MysqlUtil
 			"ENGINE=INNODB", new TreeMap<String, String>());
 	}
 
-	private boolean tableExists(String dbName)
+	boolean tableExists(String dbName)
 	{
 		try (final Connection c = this.dataSource.getConnection())
 		{
