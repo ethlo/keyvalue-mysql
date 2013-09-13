@@ -57,12 +57,12 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.22</version>
+			<version>5.1.26</version>
 		</dependency>
 		<dependency>
 			<groupId>org.iq80.snappy</groupId>
 			<artifactId>snappy</artifactId>
-			<version>0.2</version>
+			<version>0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>

@@ -10,15 +10,14 @@ import net.rubyeye.xmemcached.exception.MemcachedException;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.util.Assert;
 
-import com.ethlo.keyvalue.BatchCasKeyValueDb;
-import com.ethlo.keyvalue.BatchCasWriteWrapper;
 import com.ethlo.keyvalue.CasHolder;
+import com.ethlo.keyvalue.CasKeyValueDb;
 
 /**
  * 
  * @author mha
  */
-public class MyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer,byte[], Long>
+public class MyCachedClientImpl implements CasKeyValueDb<ByteBuffer,byte[], Long>
 {
 	private MemcachedClient client;
 	private String schemaName;
@@ -101,13 +100,6 @@ public class MyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer,byte[],
 
 	@Override
 	public void putCas(CasHolder<ByteBuffer, byte[], Long> cas)
-	{
-		// TODO:
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void flush(BatchCasWriteWrapper<ByteBuffer, byte[], Long> wrapper)
 	{
 		// TODO:
 		throw new UnsupportedOperationException();

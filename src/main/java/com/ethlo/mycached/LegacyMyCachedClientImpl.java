@@ -7,19 +7,21 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.support.DataAccessUtils;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.Assert;
 
 import com.ethlo.keyvalue.BatchCasKeyValueDb;
-import com.ethlo.keyvalue.BatchCasWriteWrapper;
 import com.ethlo.keyvalue.CasHolder;
 
 /**
@@ -206,16 +208,89 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 		final int rowsChanged = tpl.update(creator);
 		if (rowsChanged != 1)
 		{
-			throw new OptimisticLockingFailureException("Cannot update data due to concurrent modification");
+			throw createOptimisticLockingFailureException();
 		}
 	}
 
-	@Override
-	public void flush(final BatchCasWriteWrapper<ByteBuffer, byte[], Long> batch)
+	private OptimisticLockingFailureException createOptimisticLockingFailureException()
 	{
-		for (CasHolder<ByteBuffer, byte[], Long> entry : batch.data())
+		return new OptimisticLockingFailureException("Cannot update data due to concurrent modification");
+	}
+
+	@Override
+	public void putBatch(final List<CasHolder<ByteBuffer, byte[], Long>> casList)
+	{
+		
+		/*
+		// Hard to solve, as we need to use different expressions for cas/no-cas and cannot use batch for CAS to
+		final List<CasHolder<ByteBuffer, byte[], Long>> nonNullCasHolders = new LinkedList<>();
+		final List<CasHolder<ByteBuffer, byte[], Long>> nullCasHolders = new LinkedList<>();
+		for (CasHolder<ByteBuffer, byte[], Long> cas : casList)
+    	{
+			if (cas.getCasValue() != null)
+			{
+				nonNullCasHolders.add(cas);
+			}
+			else
+			{
+				nullCasHolders.add(cas);
+			}
+    	}
+		
+		// Null CAS
+		tpl.batchUpdate(insertSql, new BatchPreparedStatementSetter()
 		{
-			putCas(entry);
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException
+			{
+				final CasHolder<ByteBuffer, byte[], Long> cas = nullCasHolders.get(i);
+				ps.setString(1, getKey(cas.getKey())); 
+		        ps.setBytes(2, CompressionUtil.compress(cas.getValue()));
+		        ps.setLong(3, 0L);
+			}
+			
+			@Override
+			public int getBatchSize()
+			{
+				return nullCasHolders.size();
+			}
+		});
+		
+		// Non-null CAS
+		final int[] updates = tpl.batchUpdate(replaceCasSql, new BatchPreparedStatementSetter()
+		{
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException
+			{
+				final CasHolder<ByteBuffer, byte[], Long> cas = nonNullCasHolders.get(i);
+				ps.setString(1, getKey(cas.getKey())); 
+		        ps.setBytes(2, CompressionUtil.compress(cas.getValue()));
+		        ps.setLong(3, 0L);
+			}
+			
+			@Override
+			public int getBatchSize()
+			{
+				return nonNullCasHolders.size();
+			}
+		});
+		assertAllChanged(updates);
+		*/
+		
+		for (CasHolder<ByteBuffer, byte[], Long> cas : casList)
+		{
+			putCas(cas);
+		}
+	}
+
+	private void assertAllChanged(int[] updates)
+	{
+		for (int u : updates)
+		{
+			if (u != 1)
+			{
+				throw createOptimisticLockingFailureException();
+			}
 		}
 	}
 }
