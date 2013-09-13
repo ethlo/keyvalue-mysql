@@ -3,6 +3,8 @@ MyCached
 
 MySQL 5.6 introduced a key/value (memcached) API for faster data storage/reads (avoiding overhead of SQL).
 
+NOTE: Also contains a legacy connector with the same API to work with older versions of MySQL, using regular SQL.
+
 This project utilises the ethlo [Key/Value API (kvapi)](https://github.com/ethlo/kvapi).
 
 Build status
