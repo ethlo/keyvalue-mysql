@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ethlo.mycached</groupId>
 	<artifactId>mycached</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>0.2</version>
 	<name>MySQL Memcached client</name>
 	<scm>
 	  	<connection>scm:git:git@github.com:ethlo/mycached.git</connection>
@@ -47,7 +47,7 @@
 		<dependency>
 			<groupId>com.ethlo.kv</groupId>
 			<artifactId>kvapi</artifactId>
-			<version>0.1-SNAPSHOT</version>
+			<version>0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.xmemcached</groupId>
