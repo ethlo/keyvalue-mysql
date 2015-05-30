@@ -1,13 +1,10 @@
 package com.ethlo.mycached;
 
 
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -15,7 +12,6 @@ import javax.sql.DataSource;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.support.DataAccessUtils;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
@@ -29,7 +25,7 @@ import com.ethlo.keyvalue.CasHolder;
  * 
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, byte[], Long>
+public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<byte[], byte[], Long>
 {
 	private JdbcTemplate tpl;
 	
@@ -41,7 +37,7 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 	private final String deleteSql;
 	private final String clearSql;
 	private RowMapper<byte[]> rowMapper;
-	private RowMapper<CasHolder<ByteBuffer, byte[], Long>> casRowMapper;
+	private RowMapper<CasHolder<byte[], byte[], Long>> casRowMapper;
 	
 	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource)
 	{
@@ -54,7 +50,7 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 		this.replaceSql = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
 		this.insertSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
 		this.replaceCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
-		this.deleteSql = "DELETE FROM " + tableName + " WHERE key = ?";
+		this.deleteSql = "DELETE FROM " + tableName + " WHERE mkey = ?";
 		this.clearSql = "DELETE FROM " + tableName;
 		
 		this.rowMapper = new RowMapper<byte[]>()
@@ -66,21 +62,21 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 			}			
 		};
 		
-		this.casRowMapper = new RowMapper<CasHolder<ByteBuffer, byte[], Long>>()
+		this.casRowMapper = new RowMapper<CasHolder<byte[], byte[], Long>>()
 		{
 			@Override
-			public CasHolder<ByteBuffer, byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
+			public CasHolder<byte[], byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
 				final byte[] key = Base64.decodeBase64(rs.getString(1));
 				final byte[] value = CompressionUtil.uncompress(rs.getBytes(2));
 				final long cas = rs.getLong(3);
-				return new CasHolder<ByteBuffer, byte[], Long>(cas, ByteBuffer.wrap(key), value);
+				return new CasHolder<byte[], byte[], Long>(cas, key, value);
 			}			
 		};
 	}
 	
 	@Override
-	public byte[] get(final ByteBuffer key)
+	public byte[] get(final byte[] key)
 	{
 		final PreparedStatementCreator getPsc = new PreparedStatementCreator()
 		{
@@ -95,13 +91,13 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 		return DataAccessUtils.singleResult(tpl.query(getPsc, rowMapper));
 	}
 
-	private String getKey(ByteBuffer key)
+	private String getKey(byte[] key)
 	{
-		return Base64.encodeBase64String(key.array());
+		return Base64.encodeBase64String(key);
 	}
 	
 	@Override
-	public void put(final ByteBuffer key, final byte[] value)
+	public void put(final byte[] key, final byte[] value)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{
@@ -118,9 +114,9 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 	}
 
 	@Override
-	public void delete(ByteBuffer key)
+	public void delete(byte[] key)
 	{
-		tpl.update(deleteSql, Collections.singletonMap("key", getKey(key)));
+		tpl.update(deleteSql, getKey(key));
 	}
 
 	@Override
@@ -144,7 +140,7 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 	}
 
 	@Override
-	public CasHolder<ByteBuffer, byte[], Long> getCas(final ByteBuffer key)
+	public CasHolder<byte[], byte[], Long> getCas(final byte[] key)
 	{
 		final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
 		{
@@ -160,7 +156,7 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 	}
 
 	@Override
-	public void putCas(final CasHolder<ByteBuffer, byte[], Long> cas)
+	public void putCas(final CasHolder<byte[], byte[], Long> cas)
 	{
 		if (cas.getCasValue() != null)
 		{
@@ -172,7 +168,7 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 		}
 	}
 
-	private void insertNewDueToNullCasValue(final CasHolder<ByteBuffer, byte[], Long> cas)
+	private void insertNewDueToNullCasValue(final CasHolder<byte[], byte[], Long> cas)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{
@@ -189,7 +185,7 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 		tpl.update(creator);
 	}
 
-	private void updateWithNonNullCasValue(final CasHolder<ByteBuffer, byte[], Long> cas)
+	private void updateWithNonNullCasValue(final CasHolder<byte[], byte[], Long> cas)
 	{
 		final PreparedStatementCreator creator = new PreparedStatementCreator()
 		{
@@ -206,91 +202,20 @@ public class LegacyMyCachedClientImpl implements BatchCasKeyValueDb<ByteBuffer, 
 		    }
 		};
 		final int rowsChanged = tpl.update(creator);
-		if (rowsChanged != 1)
+		if (rowsChanged == 0)
 		{
-			throw createOptimisticLockingFailureException();
+			final CasHolder<byte[], byte[], Long> existingCas = getCas(cas.getKey());
+			throw new OptimisticLockingFailureException("Cannot update data due to concurrent modification. Details: Attempted CAS value=" + cas.getCasValue() + ", existing CAS value=" + existingCas.getCasValue());
 		}
-	}
-
-	private OptimisticLockingFailureException createOptimisticLockingFailureException()
-	{
-		return new OptimisticLockingFailureException("Cannot update data due to concurrent modification");
 	}
 
 	@Override
-	public void putBatch(final List<CasHolder<ByteBuffer, byte[], Long>> casList)
+	public void putBatch(final List<CasHolder<byte[], byte[], Long>> casList)
 	{
-		
-		/*
-		// Hard to solve, as we need to use different expressions for cas/no-cas and cannot use batch for CAS to
-		final List<CasHolder<ByteBuffer, byte[], Long>> nonNullCasHolders = new LinkedList<>();
-		final List<CasHolder<ByteBuffer, byte[], Long>> nullCasHolders = new LinkedList<>();
-		for (CasHolder<ByteBuffer, byte[], Long> cas : casList)
-    	{
-			if (cas.getCasValue() != null)
-			{
-				nonNullCasHolders.add(cas);
-			}
-			else
-			{
-				nullCasHolders.add(cas);
-			}
-    	}
-		
-		// Null CAS
-		tpl.batchUpdate(insertSql, new BatchPreparedStatementSetter()
-		{
-			@Override
-			public void setValues(PreparedStatement ps, int i) throws SQLException
-			{
-				final CasHolder<ByteBuffer, byte[], Long> cas = nullCasHolders.get(i);
-				ps.setString(1, getKey(cas.getKey())); 
-		        ps.setBytes(2, CompressionUtil.compress(cas.getValue()));
-		        ps.setLong(3, 0L);
-			}
-			
-			@Override
-			public int getBatchSize()
-			{
-				return nullCasHolders.size();
-			}
-		});
-		
-		// Non-null CAS
-		final int[] updates = tpl.batchUpdate(replaceCasSql, new BatchPreparedStatementSetter()
-		{
-			@Override
-			public void setValues(PreparedStatement ps, int i) throws SQLException
-			{
-				final CasHolder<ByteBuffer, byte[], Long> cas = nonNullCasHolders.get(i);
-				ps.setString(1, getKey(cas.getKey())); 
-		        ps.setBytes(2, CompressionUtil.compress(cas.getValue()));
-		        ps.setLong(3, 0L);
-			}
-			
-			@Override
-			public int getBatchSize()
-			{
-				return nonNullCasHolders.size();
-			}
-		});
-		assertAllChanged(updates);
-		*/
-		
-		for (CasHolder<ByteBuffer, byte[], Long> cas : casList)
+		// Hard to solve in any more efficient way
+		for (CasHolder<byte[], byte[], Long> cas : casList)
 		{
 			putCas(cas);
-		}
-	}
-
-	private void assertAllChanged(int[] updates)
-	{
-		for (int u : updates)
-		{
-			if (u != 1)
-			{
-				throw createOptimisticLockingFailureException();
-			}
 		}
 	}
 }

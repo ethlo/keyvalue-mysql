@@ -1,7 +1,6 @@
 package com.ethlo.mycached;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import javax.sql.DataSource;
@@ -17,7 +16,7 @@ import com.ethlo.keyvalue.KeyValueDbManager;
  * 
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteBuffer, byte[], BatchCasKeyValueDb<ByteBuffer,byte[], Long>>
+public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<byte[], byte[], BatchCasKeyValueDb<byte[], byte[], Long>>
 {
 	private MysqlUtil mysqlUtil;
 	private DataSource dataSource;
@@ -29,7 +28,7 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteBuffe
 	}
 	
 	@Override
-	public BatchCasKeyValueDb<ByteBuffer,byte[],Long> createMainDb(String tableName, boolean allowCreate)
+	public BatchCasKeyValueDb<byte[], byte[],Long> createMainDb(String tableName, boolean allowCreate)
 	{
 		if (tableName.length() > 64)
 		{
