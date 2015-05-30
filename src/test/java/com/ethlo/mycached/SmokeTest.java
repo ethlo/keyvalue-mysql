@@ -1,6 +1,5 @@
 package com.ethlo.mycached;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 
@@ -27,8 +26,7 @@ public class SmokeTest
 	@Resource
 	private LegacyMyCachedClientManagerImpl clientManager;
 	
-	private CasKeyValueDb<ByteBuffer, byte[], Long> client;
-	
+	private CasKeyValueDb<byte[], byte[], Long> client;
 	
 	@Before
 	public void setup()
@@ -40,7 +38,7 @@ public class SmokeTest
 	@Test
 	public void putAndGetCompare() throws SQLException
 	{
-		final ByteBuffer keyBytes = ByteBuffer.wrap(new byte[]{0,1,2,3,4,5,6,7});
+		final byte[] keyBytes = new byte[]{0,1,2,3,4,5,6,7};
 		final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
 		client.put(keyBytes, valueBytes);
 		final byte[] retVal = client.get(keyBytes);
@@ -50,13 +48,13 @@ public class SmokeTest
 	@Test
 	public void testCas() throws SQLException
 	{
-		final ByteBuffer keyBytes = ByteBuffer.wrap(new byte[]{4,5,6,7,9,9});
+		final byte[] keyBytes = new byte[]{4,5,6,7,9,9};
 		final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
 		final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsmakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
 		
 		client.put(keyBytes, valueBytes);
 		
-		final CasHolder<ByteBuffer, byte[], Long> res = client.getCas(keyBytes);
+		final CasHolder<byte[], byte[], Long> res = client.getCas(keyBytes);
 		Assert.assertEquals(Long.valueOf(0L), res.getCasValue());
 		Assert.assertArrayEquals(valueBytes, res.getValue());
 		

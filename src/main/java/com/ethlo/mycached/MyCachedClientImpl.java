@@ -1,7 +1,5 @@
 package com.ethlo.mycached;
 
-
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import net.rubyeye.xmemcached.MemcachedClient;
@@ -17,7 +15,7 @@ import com.ethlo.keyvalue.CasKeyValueDb;
  * 
  * @author mha
  */
-public class MyCachedClientImpl implements CasKeyValueDb<ByteBuffer,byte[], Long>
+public class MyCachedClientImpl implements CasKeyValueDb<byte[],byte[], Long>
 {
 	private MemcachedClient client;
 	private String schemaName;
@@ -34,7 +32,7 @@ public class MyCachedClientImpl implements CasKeyValueDb<ByteBuffer,byte[], Long
 	}
 	
 	@Override
-	public byte[] get(ByteBuffer key)
+	public byte[] get(byte[] key)
 	{
 		try
 		{
@@ -48,13 +46,13 @@ public class MyCachedClientImpl implements CasKeyValueDb<ByteBuffer,byte[], Long
 		}
 	}
 
-	private String getKey(ByteBuffer key)
+	private String getKey(byte[] key)
 	{
-		return "@@" + this.schemaName + "_" + this.tableName + "." + Base64.encodeBase64String(key.array());
+		return "@@" + this.schemaName + "_" + this.tableName + "." + Base64.encodeBase64String(key);
 	}
 
 	@Override
-	public void put(ByteBuffer key, byte[] value)
+	public void put(byte[] key, byte[] value)
 	{
 		try
 		{
@@ -67,7 +65,7 @@ public class MyCachedClientImpl implements CasKeyValueDb<ByteBuffer,byte[], Long
 	}
 
 	@Override
-	public void delete(ByteBuffer key)
+	public void delete(byte[] key)
 	{
 		try
 		{
@@ -92,14 +90,14 @@ public class MyCachedClientImpl implements CasKeyValueDb<ByteBuffer,byte[], Long
 	}
 
 	@Override
-	public CasHolder<ByteBuffer, byte[], Long> getCas(ByteBuffer key)
+	public CasHolder<byte[], byte[], Long> getCas(byte[] key)
 	{
 		// TODO:
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void putCas(CasHolder<ByteBuffer, byte[], Long> cas)
+	public void putCas(CasHolder<byte[], byte[], Long> cas)
 	{
 		// TODO:
 		throw new UnsupportedOperationException();

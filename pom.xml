@@ -3,8 +3,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ethlo.keyvalue</groupId>
 	<artifactId>keyvalue-mysql</artifactId>
-	<version>0.4</version>
+	<version>0.5</version>
 	<name>MySQL key/value API implementation</name>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.2.3.RELEASE</version>
+	</parent>
 	<scm>
 	  	<connection>scm:git:git@github.com:ethlo/mycached.git</connection>
   		<developerConnection>scm:git:git@github.com:ethlo/mycached.git</developerConnection>
@@ -46,7 +51,7 @@
 		<dependency>
 			<groupId>com.ethlo.keyvalue</groupId>
 			<artifactId>keyvalue-api</artifactId>
-			<version>0.4</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.xmemcached</groupId>
@@ -56,7 +61,6 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.26</version>
 		</dependency>
 		<dependency>
 			<groupId>org.iq80.snappy</groupId>
@@ -76,28 +80,29 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.2</version>
 		</dependency>
 		<dependency>
-			<groupId>com.jolbox</groupId>
-			<artifactId>bonecp</artifactId>
-			<version>0.7.1.RELEASE</version>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-jdbc</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 		  	<artifactId>spring-jdbc</artifactId>
-		  	<version>3.2.0.RELEASE</version>
 		</dependency>
 		<dependency>
-			<groupId>com.jolbox</groupId>
-			<artifactId>bonecp</artifactId>
-			<version>0.7.1.RELEASE</version>
+			<groupId>org.springframework</groupId>
+		  	<artifactId>spring-context</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
-			<version>4.10</version>
 		</dependency>
 		<dependency>
 			<groupId>org.easytesting</groupId>
@@ -108,7 +113,6 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
-			<version>3.2.0.RELEASE</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

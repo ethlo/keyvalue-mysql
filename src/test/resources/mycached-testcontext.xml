@@ -13,26 +13,18 @@
 	</bean>
 
 	<bean class="com.ethlo.mycached.LegacyMyCachedClientManagerImpl">
-		<constructor-arg ref="treeDbDataSource" />
+		<constructor-arg ref="lazyDbDataSource" />
 	</bean>
 
-	<bean id="plainDataSource" class="com.jolbox.bonecp.BoneCPDataSource"
+	<bean id="plainDataSource" class="org.apache.tomcat.jdbc.pool.DataSource"
 		destroy-method="close">
-		<property name="driverClass" value="com.mysql.jdbc.Driver" />
-		<property name="jdbcUrl" value="${dbserverurl}" />
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="${dbserverurl}" />
 		<property name="username" value="${dbusername}" />
 		<property name="password" value="${dbpassword}" />
-		<property name="idleConnectionTestPeriod" value="60" />
-		<property name="idleMaxAge" value="240" />
-		<property name="maxConnectionsPerPartition" value="30" />
-		<property name="minConnectionsPerPartition" value="10" />
-		<property name="partitionCount" value="3" />
-		<property name="acquireIncrement" value="5" />
-		<property name="statementsCacheSize" value="100" />
-		<property name="releaseHelperThreads" value="3" />
 	</bean>
 
-	<bean id="treeDbDataSource"
+	<bean id="lazyDbDataSource"
 		class="org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy">
 		<constructor-arg ref="plainDataSource" />
 	</bean>
