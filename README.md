@@ -18,8 +18,8 @@ Repository: http://ethlo.com/maven
 
 ```
 <dependency>
-	<groupId>com.ethlo.mycached</groupId>
-	<artifactId>mycached</artifactId>
+	<groupId>com.ethlo.keyvalue</groupId>
+	<artifactId>keyvalue-mysql</artifactId>
 	<version>0.5</version>
 </dependency>
 ```
