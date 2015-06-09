@@ -20,6 +20,6 @@ Repository: http://ethlo.com/maven
 <dependency>
 	<groupId>com.ethlo.keyvalue</groupId>
 	<artifactId>keyvalue-mysql</artifactId>
-	<version>0.5</version>
+	<version>0.6</version>
 </dependency>
 ```
