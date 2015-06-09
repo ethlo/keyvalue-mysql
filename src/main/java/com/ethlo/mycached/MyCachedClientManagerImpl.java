@@ -16,12 +16,13 @@ import org.springframework.util.DigestUtils;
 
 import com.ethlo.keyvalue.CasKeyValueDb;
 import com.ethlo.keyvalue.KeyValueDbManager;
+import com.ethlo.keyvalue.keys.ByteArrayKey;
 
 /**
  * 
  * @author Morten Haraldsen
  */
-public class MyCachedClientManagerImpl extends KeyValueDbManager<byte[], byte[], CasKeyValueDb<byte[],byte[], Long>>
+public class MyCachedClientManagerImpl extends KeyValueDbManager<ByteArrayKey, byte[], CasKeyValueDb<ByteArrayKey,byte[], Long>>
 {
 	private MemcachedClient mcc;
 	private MysqlUtil mysqlUtil;
@@ -38,7 +39,7 @@ public class MyCachedClientManagerImpl extends KeyValueDbManager<byte[], byte[],
 	}
 	
 	@Override
-	public CasKeyValueDb<byte[],byte[], Long> createMainDb(String tableName, boolean allowCreate)
+	public CasKeyValueDb<ByteArrayKey,byte[], Long> createMainDb(String tableName, boolean allowCreate)
 	{
 		final String hash = "md5_" + Hex.encodeHexString(DigestUtils.md5Digest(tableName.getBytes(StandardCharsets.UTF_8))).substring(10);
 		this.mysqlUtil.setup(hash, allowCreate);

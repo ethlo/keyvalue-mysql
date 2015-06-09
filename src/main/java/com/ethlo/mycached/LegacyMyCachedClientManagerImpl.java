@@ -11,12 +11,13 @@ import org.springframework.util.DigestUtils;
 
 import com.ethlo.keyvalue.BatchCasKeyValueDb;
 import com.ethlo.keyvalue.KeyValueDbManager;
+import com.ethlo.keyvalue.keys.ByteArrayKey;
 
 /**
  * 
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<byte[], byte[], BatchCasKeyValueDb<byte[], byte[], Long>>
+public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArrayKey, byte[], BatchCasKeyValueDb<ByteArrayKey, byte[], Long>>
 {
 	private MysqlUtil mysqlUtil;
 	private DataSource dataSource;
@@ -28,7 +29,7 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<byte[], b
 	}
 	
 	@Override
-	public BatchCasKeyValueDb<byte[], byte[],Long> createMainDb(String tableName, boolean allowCreate)
+	public BatchCasKeyValueDb<ByteArrayKey, byte[],Long> createMainDb(String tableName, boolean allowCreate)
 	{
 		if (tableName.length() > 64)
 		{

@@ -17,6 +17,9 @@ import org.springframework.test.context.support.DirtiesContextTestExecutionListe
 
 import com.ethlo.keyvalue.CasHolder;
 import com.ethlo.keyvalue.CasKeyValueDb;
+import com.ethlo.keyvalue.MutatingKeyValueDb;
+import com.ethlo.keyvalue.keys.ByteArrayKey;
+import com.google.common.base.Function;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations={"classpath:/mycached-testcontext.xml"})
@@ -26,7 +29,7 @@ public class SmokeTest
 	@Resource
 	private LegacyMyCachedClientManagerImpl clientManager;
 	
-	private CasKeyValueDb<byte[], byte[], Long> client;
+	private CasKeyValueDb<ByteArrayKey, byte[], Long> client;
 	
 	@Before
 	public void setup()
@@ -38,7 +41,7 @@ public class SmokeTest
 	@Test
 	public void putAndGetCompare() throws SQLException
 	{
-		final byte[] keyBytes = new byte[]{0,1,2,3,4,5,6,7};
+		final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{0,1,2,3,4,5,6,7});
 		final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
 		client.put(keyBytes, valueBytes);
 		final byte[] retVal = client.get(keyBytes);
@@ -48,17 +51,42 @@ public class SmokeTest
 	@Test
 	public void testCas() throws SQLException
 	{
-		final byte[] keyBytes = new byte[]{4,5,6,7,9,9};
+		final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{4,5,6,7,9,9});
 		final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
 		final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsmakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
 		
 		client.put(keyBytes, valueBytes);
 		
-		final CasHolder<byte[], byte[], Long> res = client.getCas(keyBytes);
+		final CasHolder<ByteArrayKey, byte[], Long> res = client.getCas(keyBytes);
 		Assert.assertEquals(Long.valueOf(0L), res.getCasValue());
 		Assert.assertArrayEquals(valueBytes, res.getValue());
 		
 		res.setValue(valueBytesUpdated);
 		client.putCas(res);
+	}
+	
+	@Test
+	public void testMutate() throws SQLException
+	{
+		final ByteArrayKey key = new ByteArrayKey(new byte[]{4,5,6,7,9,9});
+		final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
+		final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsmakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
+		
+		client.put(key, valueBytes);
+		
+		@SuppressWarnings("unchecked")
+		final MutatingKeyValueDb<ByteArrayKey, byte[]> mdb = (MutatingKeyValueDb<ByteArrayKey, byte[]>) client;
+		mdb.mutate(key, new Function<byte[], byte[]>()
+		{
+			@Override
+			public byte[] apply(byte[] input)
+			{
+				return valueBytesUpdated;
+			}
+		});
+		
+		final CasHolder<ByteArrayKey, byte[], Long> res = client.getCas(key);
+		Assert.assertEquals(Long.valueOf(1L), res.getCasValue());
+		Assert.assertArrayEquals(valueBytesUpdated, res.getValue());
 	}
 }

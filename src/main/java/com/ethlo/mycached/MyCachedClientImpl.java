@@ -10,12 +10,13 @@ import org.springframework.util.Assert;
 
 import com.ethlo.keyvalue.CasHolder;
 import com.ethlo.keyvalue.CasKeyValueDb;
+import com.ethlo.keyvalue.keys.ByteArrayKey;
 
 /**
  * 
  * @author mha
  */
-public class MyCachedClientImpl implements CasKeyValueDb<byte[],byte[], Long>
+public class MyCachedClientImpl implements CasKeyValueDb<ByteArrayKey,byte[], Long>
 {
 	private MemcachedClient client;
 	private String schemaName;
@@ -32,7 +33,7 @@ public class MyCachedClientImpl implements CasKeyValueDb<byte[],byte[], Long>
 	}
 	
 	@Override
-	public byte[] get(byte[] key)
+	public byte[] get(ByteArrayKey key)
 	{
 		try
 		{
@@ -46,13 +47,13 @@ public class MyCachedClientImpl implements CasKeyValueDb<byte[],byte[], Long>
 		}
 	}
 
-	private String getKey(byte[] key)
+	private String getKey(ByteArrayKey key)
 	{
-		return "@@" + this.schemaName + "_" + this.tableName + "." + Base64.encodeBase64String(key);
+		return "@@" + this.schemaName + "_" + this.tableName + "." + Base64.encodeBase64String(key.getByteArray());
 	}
 
 	@Override
-	public void put(byte[] key, byte[] value)
+	public void put(ByteArrayKey key, byte[] value)
 	{
 		try
 		{
@@ -65,7 +66,7 @@ public class MyCachedClientImpl implements CasKeyValueDb<byte[],byte[], Long>
 	}
 
 	@Override
-	public void delete(byte[] key)
+	public void delete(ByteArrayKey key)
 	{
 		try
 		{
@@ -90,14 +91,14 @@ public class MyCachedClientImpl implements CasKeyValueDb<byte[],byte[], Long>
 	}
 
 	@Override
-	public CasHolder<byte[], byte[], Long> getCas(byte[] key)
+	public CasHolder<ByteArrayKey, byte[], Long> getCas(ByteArrayKey key)
 	{
 		// TODO:
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void putCas(CasHolder<byte[], byte[], Long> cas)
+	public void putCas(CasHolder<ByteArrayKey, byte[], Long> cas)
 	{
 		// TODO:
 		throw new UnsupportedOperationException();
