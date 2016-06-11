@@ -21,6 +21,7 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArray
 {
 	private MysqlUtil mysqlUtil;
 	private DataSource dataSource;
+	private boolean useCompression = true; // For backwards compatibility
 	
 	public LegacyMyCachedClientManagerImpl(DataSource dataSource) throws IOException
 	{
@@ -44,6 +45,6 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArray
 		{
 			this.mysqlUtil.createTable(tableName);
 		}
-		return new LegacyMyCachedClientImpl(tableName, dataSource);
+		return new LegacyMyCachedClientImpl(tableName, dataSource, useCompression);
 	}
 }

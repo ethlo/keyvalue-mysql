@@ -36,6 +36,8 @@ public class LegacyMyCachedClientImpl implements
 {
 	private JdbcTemplate tpl;
 	
+	private boolean useCompression = true;
+	
 	private final String getSql;
 	private final String getCasSql;
 	private final String insertSql;
@@ -46,8 +48,10 @@ public class LegacyMyCachedClientImpl implements
 	private RowMapper<byte[]> rowMapper;
 	private RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 	
-	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource)
+	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource, boolean useCompression)
 	{
+		this.useCompression = useCompression;
+		
 		Assert.hasLength(tableName, "tableName cannot be null");
 		Assert.notNull(dataSource, "dataSource cannot be null");
 		this.tpl = new JdbcTemplate(dataSource);
@@ -65,7 +69,8 @@ public class LegacyMyCachedClientImpl implements
 			@Override
 			public byte[] mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				return CompressionUtil.uncompress(rs.getBytes(1));
+				final byte[] uncompressed = rs.getBytes(1);
+				return useCompression ? CompressionUtil.uncompress(uncompressed) : uncompressed;
 			}			
 		};
 		
@@ -75,7 +80,8 @@ public class LegacyMyCachedClientImpl implements
 			public CasHolder<ByteArrayKey, byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
 				final ByteArrayKey key = new ByteArrayKey(Base64.decodeBase64(rs.getString(1)));
-				final byte[] value = CompressionUtil.uncompress(rs.getBytes(2));
+				final byte[] uncompressed = rs.getBytes(2);
+				final byte[] value = useCompression ? CompressionUtil.uncompress(uncompressed) : uncompressed;
 				final long cas = rs.getLong(3);
 				return new CasHolder<ByteArrayKey, byte[], Long>(cas, key, value);
 			}			
@@ -115,7 +121,7 @@ public class LegacyMyCachedClientImpl implements
 		        final PreparedStatement ps = con.prepareStatement(replaceSql);
 		        final String strKey = getKey(key);
 		        ps.setString(1, strKey); 
-		        ps.setBytes(2, CompressionUtil.compress(value));
+		        ps.setBytes(2, useCompression ? CompressionUtil.compress(value) : value);
 		        return ps;
 		    }
 		};
@@ -188,7 +194,7 @@ public class LegacyMyCachedClientImpl implements
 		        final PreparedStatement ps = con.prepareStatement(insertSql);
 		        final String strKey = getKey(cas.getKey());
 		        ps.setString(1, strKey); 
-		        ps.setBytes(2, CompressionUtil.compress(cas.getValue()));
+		        ps.setBytes(2, useCompression ? CompressionUtil.compress(cas.getValue()) : cas.getValue());
 		        ps.setLong(3, 0L);
 		        return ps;
 		    }
@@ -214,7 +220,7 @@ public class LegacyMyCachedClientImpl implements
 		    	final String strKey = getKey(cas.getKey());
 		    	final long casValue = cas.getCasValue();
 		        final PreparedStatement ps = con.prepareStatement(replaceCasSql);
-		        ps.setBytes(1, CompressionUtil.compress(cas.getValue()));
+		        ps.setBytes(1, useCompression ? CompressionUtil.compress(cas.getValue()) : cas.getValue());
 		        ps.setString(2, strKey);
 		        ps.setLong(3, casValue);
 		        return ps;
@@ -251,5 +257,15 @@ public class LegacyMyCachedClientImpl implements
 		{
 			this.putCas(new CasHolder<ByteArrayKey, byte[], Long>(null, key, result));
 		}
+	}
+	
+	public void useCompression(boolean compress)
+	{
+		this.useCompression = compress;
+	}
+	
+	public boolean useCompression()
+	{
+		return this.useCompression;
 	}
 }
