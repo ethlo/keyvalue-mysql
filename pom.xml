@@ -51,7 +51,7 @@
 		<dependency>
 			<groupId>com.ethlo.keyvalue</groupId>
 			<artifactId>keyvalue-api</artifactId>
-			<version>0.6</version>
+			<version>0.6.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.xmemcached</groupId>
