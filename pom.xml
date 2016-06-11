@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ethlo.keyvalue</groupId>
 	<artifactId>keyvalue-mysql</artifactId>
-	<version>0.7</version>
+	<version>0.7.1</version>
 	<name>MySQL key/value API implementation</name>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
