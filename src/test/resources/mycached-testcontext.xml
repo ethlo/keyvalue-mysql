@@ -15,6 +15,10 @@
 	<bean class="com.ethlo.mycached.LegacyMyCachedClientManagerImpl">
 		<constructor-arg ref="lazyDbDataSource" />
 	</bean>
+	
+	<bean class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="plainDataSource" />
+	</bean>
 
 	<bean id="plainDataSource" class="org.apache.tomcat.jdbc.pool.DataSource"
 		destroy-method="close">
