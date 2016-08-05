@@ -93,8 +93,7 @@ public class SmokeTest extends AbstractTest
     @Test
     public void testMutate() throws SQLException
     {
-        final ByteArrayKey key = new ByteArrayKey(new byte[]
-        {1});
+        final ByteArrayKey key = new ByteArrayKey(new byte[]{6});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
         final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsmakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
 
