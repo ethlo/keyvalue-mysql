@@ -15,6 +15,8 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.util.DigestUtils;
 
 import com.ethlo.keyvalue.CasKeyValueDb;
+import com.ethlo.keyvalue.DataCompressor;
+import com.ethlo.keyvalue.KeyEncoder;
 import com.ethlo.keyvalue.KeyValueDbManager;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 
@@ -39,7 +41,7 @@ public class MyCachedClientManagerImpl extends KeyValueDbManager<ByteArrayKey, b
 	}
 	
 	@Override
-	public CasKeyValueDb<ByteArrayKey,byte[], Long> createMainDb(String tableName, boolean allowCreate)
+	public CasKeyValueDb<ByteArrayKey,byte[], Long> createMainDb(String tableName, boolean allowCreate, KeyEncoder keyEncoder, DataCompressor dataCompressor)
 	{
 		final String hash = "md5_" + Hex.encodeHexString(DigestUtils.md5Digest(tableName.getBytes(StandardCharsets.UTF_8))).substring(10);
 		this.mysqlUtil.setup(hash, allowCreate);

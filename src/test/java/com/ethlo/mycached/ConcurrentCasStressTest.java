@@ -14,23 +14,18 @@ import javax.annotation.Resource;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
-import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
 
+import com.ethlo.keyvalue.DataCompressor;
+import com.ethlo.keyvalue.HexKeyEncoder;
+import com.ethlo.keyvalue.KeyEncoder;
 import com.ethlo.keyvalue.MutatingKeyValueDb;
+import com.ethlo.keyvalue.NopDataCompressor;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations={"classpath:/mycached-testcontext.xml"})
-@TestExecutionListeners(listeners={DependencyInjectionTestExecutionListener.class, DirtiesContextTestExecutionListener.class})
-public class ConcurrentCasStressTest
+public class ConcurrentCasStressTest extends AbstractTest
 {
 	@Resource
 	private LegacyMyCachedClientManagerImpl clientManager;
@@ -42,7 +37,7 @@ public class ConcurrentCasStressTest
 	public void setup()
 	{
 		final String dbName = "_test";
-		this.client = (MutatingKeyValueDb<ByteArrayKey, byte[]>) clientManager.createMainDb(dbName, true);
+		this.client = (MutatingKeyValueDb<ByteArrayKey, byte[]>) clientManager.createMainDb(dbName, true, keyEncoder, dataCompressor);
 	}
 	
 	@Test

@@ -12,8 +12,6 @@ import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -26,12 +24,13 @@ import org.springframework.util.Assert;
 
 import com.ethlo.keyvalue.BatchCasKeyValueDb;
 import com.ethlo.keyvalue.CasHolder;
+import com.ethlo.keyvalue.DataCompressor;
 import com.ethlo.keyvalue.IterableKeyValueDb;
+import com.ethlo.keyvalue.KeyEncoder;
 import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.google.common.base.Function;
-import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 
 /**
@@ -46,7 +45,8 @@ public class LegacyMyCachedClientImpl implements
 {
 	private JdbcTemplate tpl;
 	
-	private boolean useCompression = true;
+	private final KeyEncoder keyEncoder;
+	private final DataCompressor dataCompressor;
 	
 	private final String getSql;
 	private final String getCasSql;
@@ -59,9 +59,10 @@ public class LegacyMyCachedClientImpl implements
 	private final RowMapper<byte[]> rowMapper;
 	private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 	
-	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource, boolean useCompression)
+	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
 	{
-		this.useCompression = useCompression;
+		this.keyEncoder = keyEncoder;
+		this.dataCompressor = dataCompressor;
 		
 		Assert.hasLength(tableName, "tableName cannot be null");
 		Assert.notNull(dataSource, "dataSource cannot be null");
@@ -81,8 +82,8 @@ public class LegacyMyCachedClientImpl implements
 			@Override
 			public byte[] mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				final byte[] uncompressed = rs.getBytes(1);
-				return useCompression ? CompressionUtil.uncompress(uncompressed) : uncompressed;
+				final byte[] data = rs.getBytes(1);
+				return dataCompressor.decompress(data);
 			}			
 		};
 		
@@ -91,9 +92,9 @@ public class LegacyMyCachedClientImpl implements
 			@Override
 			public CasHolder<ByteArrayKey, byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
 			{
-				final ByteArrayKey key = toKey(rs.getString(1));
-				final byte[] uncompressed = rs.getBytes(2);
-				final byte[] value = useCompression ? CompressionUtil.uncompress(uncompressed) : uncompressed;
+				final ByteArrayKey key = new ByteArrayKey(keyEncoder.fromString(rs.getString(1)));
+				final byte[] data = rs.getBytes(2);
+				final byte[] value = dataCompressor.decompress(data);
 				final long cas = rs.getLong(3);
 				return new CasHolder<ByteArrayKey, byte[], Long>(cas, key, value);
 			}
@@ -109,7 +110,7 @@ public class LegacyMyCachedClientImpl implements
 		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
 		    {
 		        final PreparedStatement ps = con.prepareStatement(getSql);
-		        final String strKey = fromKey(key);
+		        final String strKey = keyEncoder.toString(key.getByteArray());
 		        ps.setString(1, strKey);  
 		        return ps;
 		    }
@@ -117,25 +118,6 @@ public class LegacyMyCachedClientImpl implements
 		return DataAccessUtils.singleResult(tpl.query(getPsc, rowMapper));
 	}
 
-    private ByteArrayKey toKey(String string)
-    {
-        try
-        {
-            return new ByteArrayKey(Hex.decodeHex(string.toCharArray()));
-        }
-        catch (DecoderException exc)
-        {
-            throw Throwables.propagate(exc);
-        }
-        //return new ByteArrayKey(Base64.decodeBase64(string));
-    }
-	
-	private String fromKey(ByteArrayKey key)
-	{
-	    return Hex.encodeHexString(key.getByteArray());
-	    //return Base64.encodeBase64String(key.getByteArray());
-	}
-	
 	@Override
 	public void put(final ByteArrayKey key, final byte[] value)
 	{
@@ -145,9 +127,9 @@ public class LegacyMyCachedClientImpl implements
 		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
 		    {
 		        final PreparedStatement ps = con.prepareStatement(replaceSql);
-		        final String strKey = fromKey(key);
+		        final String strKey = keyEncoder.toString(key.getByteArray());
 		        ps.setString(1, strKey); 
-		        ps.setBytes(2, useCompression ? CompressionUtil.compress(value) : value);
+		        ps.setBytes(2, dataCompressor.compress(value));
 		        return ps;
 		    }
 		};
@@ -157,7 +139,7 @@ public class LegacyMyCachedClientImpl implements
 	@Override
 	public void delete(ByteArrayKey key)
 	{
-		tpl.update(deleteSql, fromKey(key));
+		tpl.update(deleteSql, keyEncoder.toString(key.getByteArray()));
 	}
 
 	@Override
@@ -189,7 +171,7 @@ public class LegacyMyCachedClientImpl implements
 		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
 		    {
 		        final PreparedStatement ps = con.prepareStatement(getCasSql);
-		        final String strKey = fromKey(key);
+		        final String strKey = keyEncoder.toString(key.getByteArray());
 		        ps.setString(1, strKey);  
 		        return ps;
 		    }
@@ -218,9 +200,9 @@ public class LegacyMyCachedClientImpl implements
 		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
 		    {
 		        final PreparedStatement ps = con.prepareStatement(insertSql);
-		        final String strKey = fromKey(cas.getKey());
+		        final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
 		        ps.setString(1, strKey); 
-		        ps.setBytes(2, useCompression ? CompressionUtil.compress(cas.getValue()) : cas.getValue());
+		        ps.setBytes(2, dataCompressor.compress(cas.getValue()));
 		        ps.setLong(3, 0L);
 		        return ps;
 		    }
@@ -243,10 +225,10 @@ public class LegacyMyCachedClientImpl implements
 		    @Override
 		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
 		    {
-		    	final String strKey = fromKey(cas.getKey());
+		    	final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
 		    	final long casValue = cas.getCasValue();
 		        final PreparedStatement ps = con.prepareStatement(replaceCasSql);
-		        ps.setBytes(1, useCompression ? CompressionUtil.compress(cas.getValue()) : cas.getValue());
+		        ps.setBytes(1, dataCompressor.compress(cas.getValue()));
 		        ps.setString(2, strKey);
 		        ps.setLong(3, casValue);
 		        return ps;
@@ -283,16 +265,6 @@ public class LegacyMyCachedClientImpl implements
 		{
 			this.putCas(new CasHolder<ByteArrayKey, byte[], Long>(null, key, result));
 		}
-	}
-	
-	public void useCompression(boolean compress)
-	{
-		this.useCompression = compress;
-	}
-	
-	public boolean useCompression()
-	{
-		return this.useCompression;
 	}
 
     @Override
@@ -411,7 +383,7 @@ public class LegacyMyCachedClientImpl implements
                 public PreparedStatement createPreparedStatement(Connection con) throws SQLException
                 {
                     final PreparedStatement ps = con.prepareStatement(getCasSqlPrefix, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-                    final String strKey = fromKey(key);
+                    final String strKey = keyEncoder.toString(key.getByteArray());
                     ps.setString(1, strKey + "%");  
                     return ps;
                 }

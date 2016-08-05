@@ -10,6 +10,8 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.util.DigestUtils;
 
 import com.ethlo.keyvalue.BatchCasKeyValueDb;
+import com.ethlo.keyvalue.DataCompressor;
+import com.ethlo.keyvalue.KeyEncoder;
 import com.ethlo.keyvalue.KeyValueDbManager;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 
@@ -21,7 +23,6 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArray
 {
 	private MysqlUtil mysqlUtil;
 	private DataSource dataSource;
-	private boolean useCompression = true; // For backwards compatibility
 	
 	public LegacyMyCachedClientManagerImpl(DataSource dataSource) throws IOException
 	{
@@ -30,7 +31,7 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArray
 	}
 	
 	@Override
-	public BatchCasKeyValueDb<ByteArrayKey, byte[],Long> createMainDb(String tableName, boolean allowCreate)
+	public BatchCasKeyValueDb<ByteArrayKey, byte[],Long> createMainDb(String tableName, boolean allowCreate, KeyEncoder keyEncoder, DataCompressor dataCompressor)
 	{
 		if (tableName.length() > 64)
 		{
@@ -45,6 +46,6 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArray
 		{
 			this.mysqlUtil.createTable(tableName);
 		}
-		return new LegacyMyCachedClientImpl(tableName, dataSource, useCompression);
-	}
+		return new LegacyMyCachedClientImpl(tableName, dataSource, keyEncoder, dataCompressor);
+	}	
 }

@@ -8,14 +8,6 @@ import javax.annotation.Resource;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
-import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
-import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.ethlo.keyvalue.CasHolder;
 import com.ethlo.keyvalue.CasKeyValueDb;
@@ -25,11 +17,7 @@ import com.ethlo.keyvalue.SeekableIterator;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.google.common.base.Function;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "classpath:/mycached-testcontext.xml" })
-@TestExecutionListeners(listeners ={ DependencyInjectionTestExecutionListener.class, DirtiesContextTestExecutionListener.class, TransactionalTestExecutionListener.class })
-@Transactional
-public class SmokeTest
+public class SmokeTest extends AbstractTest
 {
     @Resource
     private LegacyMyCachedClientManagerImpl clientManager;
@@ -40,7 +28,7 @@ public class SmokeTest
     public void setup()
     {
         final String dbName = "someTestData";
-        this.client = clientManager.createMainDb(dbName, true);
+        this.client = clientManager.createMainDb(dbName, true, keyEncoder, dataCompressor);
     }
 
     @Test
