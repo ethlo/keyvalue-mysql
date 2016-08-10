@@ -3,12 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ethlo.keyvalue</groupId>
 	<artifactId>keyvalue-mysql</artifactId>
-	<version>0.8</version>
+	<version>0.8.2</version>
 	<name>MySQL key/value API implementation</name>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.3.3.RELEASE</version>
+		<version>1.4.0.RELEASE</version>
 	</parent>
 	<scm>
 	  	<connection>scm:git:git@github.com:ethlo/mycached.git</connection>

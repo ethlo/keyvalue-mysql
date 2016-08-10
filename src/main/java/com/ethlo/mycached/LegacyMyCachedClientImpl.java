@@ -51,6 +51,7 @@ public class LegacyMyCachedClientImpl implements
 	private final String getSql;
 	private final String getCasSql;
 	private final String getCasSqlPrefix;
+	private final String getCasSqlFirst;
 	private final String insertSql;
 	private final String replaceSql;
 	private final String replaceCasSql;
@@ -70,6 +71,7 @@ public class LegacyMyCachedClientImpl implements
 		
 		this.getSql = "SELECT mvalue FROM " + tableName + " WHERE mkey = ?";
 		this.getCasSql = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey = ?";
+		this.getCasSqlFirst = "SELECT mkey, mvalue, cas_column FROM " + tableName + " ORDER BY mkey";
 		this.getCasSqlPrefix = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey LIKE ?";
 		this.replaceSql = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
 		this.insertSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
@@ -306,6 +308,7 @@ public class LegacyMyCachedClientImpl implements
                 try
                 {
                     rs.close();
+                    rs = null;
                 }
                 catch (SQLException exc)
                 {
@@ -318,6 +321,7 @@ public class LegacyMyCachedClientImpl implements
                 try
                 {
                     ps.close();
+                    ps = null;
                 }
                 catch (SQLException exc)
                 {
@@ -330,6 +334,7 @@ public class LegacyMyCachedClientImpl implements
                 try
                 {
                     connection.close();
+                    connection = null;
                 }
                 catch (SQLException exc)
                 {
@@ -391,11 +396,9 @@ public class LegacyMyCachedClientImpl implements
             
             try
             {
-                if (this.connection == null)
-                {
-                    this.connection = tpl.getDataSource().getConnection();
-                    this.ps = getCasPsc.createPreparedStatement(connection);
-                }
+                close();
+                this.connection = tpl.getDataSource().getConnection();
+                this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
                 if (! this.rs.first())
                 {
@@ -411,16 +414,30 @@ public class LegacyMyCachedClientImpl implements
         @Override
         public void seekToFirst()
         {
-            if (rs != null)
+            final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
             {
-                try
+                @Override
+                public PreparedStatement createPreparedStatement(Connection con) throws SQLException
                 {
-                    rs.first();
+                    final PreparedStatement ps = con.prepareStatement(getCasSqlFirst, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                    return ps;
                 }
-                catch (SQLException exc)
+            };
+            
+            try
+            {
+                close();
+                this.connection = tpl.getDataSource().getConnection();
+                this.ps = getCasPsc.createPreparedStatement(connection);
+                this.rs = ps.executeQuery();
+                if (! this.rs.first())
                 {
-                    throw new DataAccessResourceFailureException(exc.getMessage(), exc);
+                    throw new EmptyResultDataAccessException(1);
                 }
+            }
+            catch (SQLException exc)
+            {
+                throw new DataAccessResourceFailureException(exc.getMessage(), exc);
             }
         }
 
