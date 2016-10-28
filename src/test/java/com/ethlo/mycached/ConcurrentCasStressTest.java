@@ -16,11 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import com.ethlo.keyvalue.DataCompressor;
-import com.ethlo.keyvalue.HexKeyEncoder;
-import com.ethlo.keyvalue.KeyEncoder;
 import com.ethlo.keyvalue.MutatingKeyValueDb;
-import com.ethlo.keyvalue.NopDataCompressor;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
