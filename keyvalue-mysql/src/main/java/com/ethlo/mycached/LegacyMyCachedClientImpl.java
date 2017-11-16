@@ -241,6 +241,8 @@ public class LegacyMyCachedClientImpl implements
 		{
 			throw new OptimisticLockingFailureException("Cannot update data for key " + cas.getKey() + " due to concurrent modification. Details: Attempted CAS value=" + cas.getCasValue());
 		}
+		
+		//return new CasHolder<>(cas.getCasValue(), cas.getKey(), cas.getValue());
 	}
 
 	@Override
