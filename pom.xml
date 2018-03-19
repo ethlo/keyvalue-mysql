@@ -9,17 +9,18 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.5.6.RELEASE</version>
+		<version>1.5.10.RELEASE</version>
 	</parent>
 	<scm>
-	  	<connection>scm:git:git@github.com:ethlo/jkv.git</connection>
-  		<developerConnection>scm:git:git@github.com:ethlo/mycached.git</developerConnection>
-  		<url>http://github.com/ethlo/mycached</url>
- 	</scm>
+		<connection>scm:git:git@github.com:ethlo/jkv.git</connection>
+		<developerConnection>scm:git:git@github.com:ethlo/mycached.git</developerConnection>
+		<url>http://github.com/ethlo/mycached</url>
+	</scm>
 	<modules>
 		<module>keyvalue-api</module>
 		<module>keyvalue-mysql</module>
 		<module>keyvalue-cache</module>
+		<module>keyvalue-sync</module>
 	</modules>
 	<build>
 		<extensions>
@@ -28,7 +29,7 @@
 				<artifactId>wagon-ssh</artifactId>
 				<version>1.0</version>
 			</extension>
-		</extensions>  
+		</extensions>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -40,4 +41,13 @@
 			</plugin>
 		</plugins>
 	</build>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>24.1-jre</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 </project>
