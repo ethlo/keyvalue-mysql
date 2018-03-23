@@ -3,3 +3,5 @@ jdk:
   - oraclejdk8
 before_script:
   - mysql -e 'create database mycached;'
+after_success:
+  - mvn clean test jacoco:report coveralls:report
