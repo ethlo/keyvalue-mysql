@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>com.ethlo.keyvalue</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.9.0</version>
+		<version>0.9.1</version>
 	</parent>
 	<dependencies>
 		<dependency>
