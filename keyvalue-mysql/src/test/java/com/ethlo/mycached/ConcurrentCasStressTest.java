@@ -20,7 +20,7 @@ package com.ethlo.mycached;
  * #L%
  */
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,13 +37,14 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
+import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
 public class ConcurrentCasStressTest extends AbstractTest
 {
     @Autowired
-    private LegacyMyCachedClientManagerImpl clientManager;
+    private MysqlClientManagerImpl clientManager;
 
     private MutatingKeyValueDb<ByteArrayKey, byte[]> client;
 
@@ -60,46 +61,37 @@ public class ConcurrentCasStressTest extends AbstractTest
     {
         final int threadCount = 200;
         final int iterations = 500;
-        final List<Callable<Void>> threadArr = new ArrayList<Callable<Void>>(threadCount);
+        final List<Callable<Void>> threadArr = new ArrayList<>(threadCount);
         final AtomicInteger failed = new AtomicInteger();
         for (int threadIdx = 0; threadIdx < threadCount; threadIdx++)
         {
-            threadArr.add(new Callable<Void>()
+            threadArr.add(() ->
             {
-                @Override
-                public Void call() throws Exception
+                for (int j = 0; j < iterations; j++)
                 {
-                    for (int j = 0; j < iterations; j++)
+                    final ByteArrayKey key = new ByteArrayKey(Ints.toByteArray(j));
+
+                    boolean failing = true;
+                    while (failing)
                     {
-                        final ByteArrayKey key = new ByteArrayKey(Ints.toByteArray(j));
-
-                        boolean failing = true;
-                        while (failing)
+                        try
                         {
-                            try
+                            client.mutate(key, (Function<byte[], byte[]>) input ->
                             {
-                                client.mutate(key, new Function<byte[], byte[]>()
-                                {
-                                    @Override
-                                    public byte[] apply(byte[] input)
-                                    {
-                                        final int curCount = input != null ? Ints.fromByteArray(input) : 0;
+                                final int curCount = input != null ? Ints.fromByteArray(input) : 0;
 
-                                        // Increment by 1
-                                        return Ints.toByteArray(curCount + 1);
-                                    }
-                                });
-                                failing = false;
-                            }
-                            catch (OptimisticLockingFailureException exc)
-                            {
-                                failing = true;
-                                failed.incrementAndGet();
-                            }
+                                // Increment by 1
+                                return Ints.toByteArray(curCount + 1);
+                            });
+                            failing = false;
+                        }
+                        catch (OptimisticLockingFailureException exc)
+                        {
+                            failed.incrementAndGet();
                         }
                     }
-                    return null;
                 }
+                return null;
             });
         }
 
@@ -128,46 +120,36 @@ public class ConcurrentCasStressTest extends AbstractTest
     {
         final int threadCount = 25;
         final int iterations = 100;
-        final List<Callable<Void>> threadArr = new ArrayList<Callable<Void>>(threadCount);
+        final List<Callable<Void>> threadArr = new ArrayList<>(threadCount);
         final ByteArrayKey key = new ByteArrayKey(Ints.toByteArray((int) (Math.random() * Integer.MAX_VALUE)));
         final AtomicInteger failed = new AtomicInteger();
         for (int threadIdx = 0; threadIdx < threadCount; threadIdx++)
         {
-            threadArr.add(new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            threadArr.add(() -> {
+                for (int j = 0; j < iterations; j++)
                 {
-                    for (int j = 0; j < iterations; j++)
+                    boolean failing = true;
+                    while (failing)
                     {
-                        boolean failing = true;
-                        while (failing)
+                        try
                         {
-                            try
+                            client.mutate(key, (Function<byte[], byte[]>) input ->
                             {
-                                client.mutate(key, new Function<byte[], byte[]>()
-                                {
-                                    @Override
-                                    public byte[] apply(byte[] input)
-                                    {
-                                        final int curCount = input != null ? Ints.fromByteArray(input) : 0;
+                                final int curCount = input != null ? Ints.fromByteArray(input) : 0;
 
-                                        // Increment by 1
-                                        return Ints.toByteArray(curCount + 1);
-                                    }
-                                });
+                                // Increment by 1
+                                return Ints.toByteArray(curCount + 1);
+                            });
 
-                                failing = false;
-                            }
-                            catch (OptimisticLockingFailureException exc)
-                            {
-                                failing = true;
-                                failed.incrementAndGet();
-                            }
+                            failing = false;
+                        }
+                        catch (OptimisticLockingFailureException exc)
+                        {
+                            failed.incrementAndGet();
                         }
                     }
-                    return null;
                 }
+                return null;
             });
         }
 

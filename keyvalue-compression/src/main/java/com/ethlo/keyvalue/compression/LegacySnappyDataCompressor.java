@@ -1,4 +1,4 @@
-package com.ethlo.mycached;
+package com.ethlo.keyvalue.compression;
 
 /*-
  * #%L
@@ -23,10 +23,8 @@ package com.ethlo.mycached;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
-import org.springframework.dao.DataAccessResourceFailureException;
-
-import com.ethlo.keyvalue.compression.DataCompressor;
 import com.google.common.io.ByteStreams;
 
 @SuppressWarnings({"deprecation", "UnstableApiUsage"})
@@ -45,7 +43,7 @@ public class LegacySnappyDataCompressor implements DataCompressor
         }
         catch (IOException exc)
         {
-            throw new DataAccessResourceFailureException(exc.getMessage(), exc);
+            throw new UncheckedIOException(exc.getMessage(), exc);
         }
     }
 
@@ -65,7 +63,7 @@ public class LegacySnappyDataCompressor implements DataCompressor
         }
         catch (IOException exc)
         {
-            throw new DataAccessResourceFailureException(exc.getMessage(), exc);
+            throw new UncheckedIOException(exc.getMessage(), exc);
         }
     }
 }

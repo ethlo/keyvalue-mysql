@@ -26,12 +26,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ethlo.keyvalue.compression.DataCompressor;
+import com.ethlo.keyvalue.compression.NopDataCompressor;
 import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
-import com.ethlo.keyvalue.compression.NopDataCompressor;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = TestCfg.class)
+@SpringBootTest(classes = TestCfg.class, properties = "spring.datasource.type=com.zaxxer.hikari.HikariDataSource")
 @Transactional
 public abstract class AbstractTest
 {

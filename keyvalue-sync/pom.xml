@@ -6,7 +6,7 @@
 	<description>Generic Key/Value syncronization</description>
 	<parent>
 		<groupId>com.ethlo.keyvalue</groupId>
-		<artifactId>parent</artifactId>
+		<artifactId>keyvalue</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<dependencies>

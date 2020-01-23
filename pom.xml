@@ -2,9 +2,9 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ethlo.keyvalue</groupId>
-	<artifactId>parent</artifactId>
+	<artifactId>keyvalue</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
-	<name>Key/Value parent project</name>
+	<name>Key/value umbrella project</name>
 	<packaging>pom</packaging>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -21,6 +21,7 @@
 		<module>keyvalue-mysql</module>
 		<module>keyvalue-cache</module>
 		<module>keyvalue-sync</module>
+		<module>keyvalue-compression</module>
 	</modules>
 	<url>https://github.com/ethlo/keyvalue</url>
 	<developers>

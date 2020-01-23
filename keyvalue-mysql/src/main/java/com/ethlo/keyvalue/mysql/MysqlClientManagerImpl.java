@@ -1,4 +1,4 @@
-package com.ethlo.mycached;
+package com.ethlo.keyvalue.mysql;
 
 /*-
  * #%L
@@ -33,12 +33,12 @@ import com.ethlo.keyvalue.keys.ByteArrayKey;
 /**
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArrayKey, byte[], BatchCasKeyValueDb<ByteArrayKey, byte[], Long>>
+public class MysqlClientManagerImpl extends KeyValueDbManager<ByteArrayKey, byte[], BatchCasKeyValueDb<ByteArrayKey, byte[], Long>>
 {
     private final MysqlUtil mysqlUtil;
     private final DataSource dataSource;
 
-    public LegacyMyCachedClientManagerImpl(DataSource dataSource)
+    public MysqlClientManagerImpl(DataSource dataSource)
     {
         this.dataSource = dataSource;
         this.mysqlUtil = new MysqlUtil(null, dataSource);
@@ -55,6 +55,6 @@ public class LegacyMyCachedClientManagerImpl extends KeyValueDbManager<ByteArray
         {
             this.mysqlUtil.createTable(tableName);
         }
-        return new LegacyMyCachedClientImpl(tableName, dataSource, keyEncoder, dataCompressor);
+        return new MysqlClientImpl(tableName, dataSource, keyEncoder, dataCompressor);
     }
 }

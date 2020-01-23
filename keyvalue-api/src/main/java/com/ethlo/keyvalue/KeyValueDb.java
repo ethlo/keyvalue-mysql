@@ -21,6 +21,8 @@ package com.ethlo.keyvalue;
  */
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.ethlo.keyvalue.cas.BatchCasKeyValueDb;
 import com.ethlo.keyvalue.cas.CasKeyValueDb;
@@ -37,6 +39,11 @@ public interface KeyValueDb<K extends Key, V> extends AutoCloseable
 {
     V get(K key);
 
+    default Map<K,V> getAll(Set<K> keys)
+    {
+        return keys.stream().collect(Collectors.toMap(k->k, this::get));
+    }
+
     void put(K key, V value);
 
     default void putAll(Map<K, V> values)
@@ -45,6 +52,11 @@ public interface KeyValueDb<K extends Key, V> extends AutoCloseable
     }
 
     void delete(K key);
+
+    default void deleteAll(Set<K> keys)
+    {
+        keys.forEach(this::delete);
+    }
 
     void clear();
 

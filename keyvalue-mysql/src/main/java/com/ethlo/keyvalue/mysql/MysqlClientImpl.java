@@ -1,4 +1,4 @@
-package com.ethlo.mycached;
+package com.ethlo.keyvalue.mysql;
 
 /*-
  * #%L
@@ -26,6 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,11 +36,14 @@ import java.util.function.Function;
 
 import javax.sql.DataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.support.DataAccessUtils;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
@@ -63,13 +67,15 @@ import com.google.common.collect.AbstractIterator;
  *
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientImpl implements
+public class MysqlClientImpl implements
         MutatingKeyValueDb<ByteArrayKey, byte[]>,
         IterableKeyValueDb<ByteArrayKey, byte[]>,
         BatchKeyValueDb<ByteArrayKey, byte[]>,
         BatchCasKeyValueDb<ByteArrayKey, byte[], Long>,
         CasKeyValueDb<ByteArrayKey, byte[], Long>
 {
+    private static final Logger logger = LoggerFactory.getLogger(MysqlClientImpl.class);
+
     private JdbcTemplate tpl;
 
     private final KeyEncoder keyEncoder;
@@ -87,7 +93,7 @@ public class LegacyMyCachedClientImpl implements
     private final RowMapper<byte[]> rowMapper;
     private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 
-    public LegacyMyCachedClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
+    public MysqlClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
     {
         this.keyEncoder = keyEncoder;
         this.dataCompressor = dataCompressor;
@@ -144,19 +150,24 @@ public class LegacyMyCachedClientImpl implements
     @Override
     public void putAll(final Map<ByteArrayKey, byte[]> values)
     {
-        final PreparedStatementCreator creator = connection ->
+        final List<ByteArrayKey> keys = new ArrayList<>(values.keySet());
+        int[] updateCounts = tpl.batchUpdate(replaceSql, new BatchPreparedStatementSetter()
         {
-            final PreparedStatement ps = connection.prepareStatement(replaceSql);
-            for (Entry<ByteArrayKey, byte[]> entry : values.entrySet())
+            public void setValues(PreparedStatement ps, int i) throws SQLException
             {
-                final String strKey = keyEncoder.toString(entry.getKey().getByteArray());
-                ps.setString(1, strKey);
-                ps.setBytes(2, dataCompressor.compress(entry.getValue()));
-                ps.addBatch();
+                final ByteArrayKey key = keys.get(i);
+                final byte[] value = values.get(key);
+                ps.setString(1, keyEncoder.toString(key.getByteArray()));
+                ps.setBytes(2, dataCompressor.compress(value));
             }
-            return ps;
-        };
-        tpl.update(creator);
+
+            public int getBatchSize()
+            {
+                return values.size();
+            }
+        });
+
+        logger.debug("Updated {} entries", updateCounts.length);
     }
 
     @Override
@@ -168,14 +179,7 @@ public class LegacyMyCachedClientImpl implements
     @Override
     public void clear()
     {
-        final PreparedStatementCreator creator = new PreparedStatementCreator()
-        {
-            @Override
-            public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-            {
-                return con.prepareStatement(clearSql);
-            }
-        };
+        final PreparedStatementCreator creator = connection -> connection.prepareStatement(clearSql);
         tpl.update(creator);
     }
 
@@ -213,18 +217,13 @@ public class LegacyMyCachedClientImpl implements
 
     private void insertNewDueToNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
     {
-        final PreparedStatementCreator creator = new PreparedStatementCreator()
-        {
-            @Override
-            public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-            {
-                final PreparedStatement ps = con.prepareStatement(insertSql);
-                final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
-                ps.setString(1, strKey);
-                ps.setBytes(2, dataCompressor.compress(cas.getValue()));
-                ps.setLong(3, 0L);
-                return ps;
-            }
+        final PreparedStatementCreator creator = connection -> {
+            final PreparedStatement ps = connection.prepareStatement(insertSql);
+            final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
+            ps.setString(1, strKey);
+            ps.setBytes(2, dataCompressor.compress(cas.getValue()));
+            ps.setLong(3, 0L);
+            return ps;
         };
 
         try
@@ -311,7 +310,7 @@ public class LegacyMyCachedClientImpl implements
                 {
                     final CasHolder<ByteArrayKey, byte[], Long> res = casRowMapper.mapRow(rs, rs.getRow());
                     rs.next();
-                    return new AbstractMap.SimpleEntry<ByteArrayKey, byte[]>(res.getKey(), res.getValue());
+                    return new AbstractMap.SimpleEntry<>(res.getKey(), res.getValue());
                 }
                 return endOfData();
             }
@@ -390,7 +389,7 @@ public class LegacyMyCachedClientImpl implements
                 if (rs.previous())
                 {
                     final CasHolder<ByteArrayKey, byte[], Long> res = casRowMapper.mapRow(rs, rs.getRow());
-                    return new AbstractMap.SimpleEntry<ByteArrayKey, byte[]>(res.getKey(), res.getValue());
+                    return new AbstractMap.SimpleEntry<>(res.getKey(), res.getValue());
                 }
             }
             catch (SQLException exc)
@@ -401,7 +400,7 @@ public class LegacyMyCachedClientImpl implements
         }
 
         @Override
-        public void seekTo(ByteArrayKey key)
+        public boolean seekTo(ByteArrayKey key)
         {
             final PreparedStatementCreator getCasPsc = con ->
             {
@@ -417,10 +416,7 @@ public class LegacyMyCachedClientImpl implements
                 this.connection = tpl.getDataSource().getConnection();
                 this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
-                if (!this.rs.first())
-                {
-                    throw new EmptyResultDataAccessException(1);
-                }
+                return this.rs.first();
             }
             catch (SQLException exc)
             {
@@ -429,17 +425,9 @@ public class LegacyMyCachedClientImpl implements
         }
 
         @Override
-        public void seekToFirst()
+        public boolean seekToFirst()
         {
-            final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
-            {
-                @Override
-                public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-                {
-                    final PreparedStatement ps = con.prepareStatement(getCasSqlFirst, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-                    return ps;
-                }
-            };
+            final PreparedStatementCreator getCasPsc = connection -> connection.prepareStatement(getCasSqlFirst, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
             try
             {
@@ -447,10 +435,7 @@ public class LegacyMyCachedClientImpl implements
                 this.connection = tpl.getDataSource().getConnection();
                 this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
-                if (!this.rs.first())
-                {
-                    throw new EmptyResultDataAccessException(1);
-                }
+                return rs.first();
             }
             catch (SQLException exc)
             {
@@ -459,11 +444,11 @@ public class LegacyMyCachedClientImpl implements
         }
 
         @Override
-        public void seekToLast()
+        public boolean seekToLast()
         {
             try
             {
-                rs.last();
+                return rs.last();
             }
             catch (SQLException exc)
             {

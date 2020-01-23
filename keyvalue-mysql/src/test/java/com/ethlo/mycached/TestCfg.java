@@ -22,15 +22,19 @@ package com.ethlo.mycached;
 
 import javax.sql.DataSource;
 
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
+
+@EnableAutoConfiguration
 @Configuration
 public class TestCfg
 {
     @Bean
-    public LegacyMyCachedClientManagerImpl legacyMyCachedClientManager(DataSource dataSource)
+    public MysqlClientManagerImpl legacyMyCachedClientManager(DataSource dataSource)
     {
-        return new LegacyMyCachedClientManagerImpl(dataSource);
+        return new MysqlClientManagerImpl(dataSource);
     }
 }

@@ -9,9 +9,9 @@ package com.ethlo.mycached;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,13 @@ package com.ethlo.mycached;
  * #L%
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.annotation.Resource;
 
@@ -29,18 +34,25 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ethlo.keyvalue.cas.CasHolder;
-import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.IterableKeyValueDb;
 import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
+import com.ethlo.keyvalue.cas.CasHolder;
+import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
+import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
 import com.google.common.base.Function;
 
 public class SmokeTest extends AbstractTest
 {
+    final ByteArrayKey keyBytes0 = new ByteArrayKey(new byte[]{0, 0});
+    final ByteArrayKey keyBytes1 = new ByteArrayKey(new byte[]{1, 0});
+    final ByteArrayKey keyBytes2 = new ByteArrayKey(new byte[]{1, 1});
+    final ByteArrayKey keyBytes3 = new ByteArrayKey(new byte[]{1, 2});
+    final ByteArrayKey keyBytes4 = new ByteArrayKey(new byte[]{2, 0});
+
     @Resource
-    private LegacyMyCachedClientManagerImpl clientManager;
+    private MysqlClientManagerImpl clientManager;
 
     private CasKeyValueDb<ByteArrayKey, byte[], Long> client;
 
@@ -52,55 +64,61 @@ public class SmokeTest extends AbstractTest
     }
 
     @Test
-    public void putAndGetCompare() throws SQLException
+    public void testGetAll()
     {
-        final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]
-        { 0, 1, 2, 3, 4, 5, 6, 7 });
-        final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
+        final Map<ByteArrayKey, byte[]> data = createFiveEntries();
+        client.putAll(data);
+
+        final Set<ByteArrayKey> keys = new TreeSet<>();
+        keys.add(keyBytes0);
+        keys.add(keyBytes1);
+        keys.add(keyBytes2);
+
+        final Map<ByteArrayKey, byte[]> result = client.getAll(keys);
+        assertThat(result).hasSize(3);
+        assertThat(result.keySet()).containsExactlyInAnyOrder(keyBytes0, keyBytes1, keyBytes2);
+    }
+
+    @Test
+    public void putAndGetCompare()
+    {
+        final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 7});
+        final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
         client.put(keyBytes, valueBytes);
         final byte[] retVal = client.get(keyBytes);
         Assert.assertArrayEquals(valueBytes, retVal);
     }
 
     @Test
-    public void testCas() throws SQLException
+    public void testCas()
     {
-        final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{ 4, 5, 6, 7, 9, 9 });
+        final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{4, 5, 6, 7, 9, 9});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
         client.put(keyBytes, valueBytes);
-        
+
         final CasHolder<ByteArrayKey, byte[], Long> res = client.getCas(keyBytes);
         Assert.assertEquals(keyBytes, res.getKey());
         Assert.assertEquals(Long.valueOf(0L), res.getCasValue());
         Assert.assertArrayEquals(valueBytes, res.getValue());
 
-        final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsmakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
+        final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsMakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
         res.setValue(valueBytesUpdated);
         client.putCas(res);
     }
 
     @Test
-    public void testIterate() throws SQLException
+    public void testIterate()
     {
-        final ByteArrayKey keyBytes0 = new ByteArrayKey(new byte[] { 0, 0 });
-        final ByteArrayKey keyBytes1 = new ByteArrayKey(new byte[] { 1, 0 });
-        final ByteArrayKey keyBytes2 = new ByteArrayKey(new byte[] { 1, 1 });
-        final ByteArrayKey keyBytes3 = new ByteArrayKey(new byte[] { 1, 2 });
-        final ByteArrayKey keyBytes4 = new ByteArrayKey(new byte[] { 2, 0 });
-        final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
+        final Map<ByteArrayKey, byte[]> data = createFiveEntries();
+        client.putAll(data);
 
-        client.put(keyBytes0, valueBytes);
-        client.put(keyBytes1, valueBytes);
-        client.put(keyBytes2, valueBytes);
-        client.put(keyBytes3, valueBytes);
-        client.put(keyBytes4, valueBytes);
-
-        IterableKeyValueDb<ByteArrayKey, byte[]> idb = (IterableKeyValueDb<ByteArrayKey, byte[]>) client;
+        final IterableKeyValueDb<ByteArrayKey, byte[]> idb = (IterableKeyValueDb<ByteArrayKey, byte[]>) client;
         int count = 0;
         try (final SeekableIterator<ByteArrayKey, byte[]> iter = idb.iterator())
         {
             final ByteArrayKey prefixKey = new ByteArrayKey(new byte[]{1});
-            iter.seekTo(prefixKey);
+            assertThat(iter.seekTo(prefixKey)).isTrue();
+            //iter.seekToFirst();
             while (iter.hasNext())
             {
                 System.out.println(iter.next());
@@ -110,25 +128,29 @@ public class SmokeTest extends AbstractTest
         Assert.assertEquals(3, count);
     }
 
+    private Map<ByteArrayKey, byte[]> createFiveEntries()
+    {
+        final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
+        final Map<ByteArrayKey, byte[]> data = new TreeMap<>();
+        data.put(keyBytes0, valueBytes);
+        data.put(keyBytes1, valueBytes);
+        data.put(keyBytes2, valueBytes);
+        data.put(keyBytes3, valueBytes);
+        data.put(keyBytes4, valueBytes);
+        return data;
+    }
+
     @Test
-    public void testMutate() throws SQLException
+    public void testMutate()
     {
         final ByteArrayKey key = new ByteArrayKey(new byte[]{6});
-        final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
-        final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsmakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
+        final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
+        final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsMakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
 
         client.put(key, valueBytes);
 
-        @SuppressWarnings("unchecked")
-        final MutatingKeyValueDb<ByteArrayKey, byte[]> mdb = (MutatingKeyValueDb<ByteArrayKey, byte[]>) client;
-        mdb.mutate(key, new Function<byte[], byte[]>()
-        {
-            @Override
-            public byte[] apply(byte[] input)
-            {
-                return valueBytesUpdated;
-            }
-        });
+        @SuppressWarnings("unchecked") final MutatingKeyValueDb<ByteArrayKey, byte[]> mdb = (MutatingKeyValueDb<ByteArrayKey, byte[]>) client;
+        mdb.mutate(key, (Function<byte[], byte[]>) input -> valueBytesUpdated);
 
         final CasHolder<ByteArrayKey, byte[], Long> res = client.getCas(key);
         Assert.assertEquals(Long.valueOf(1L), res.getCasValue());

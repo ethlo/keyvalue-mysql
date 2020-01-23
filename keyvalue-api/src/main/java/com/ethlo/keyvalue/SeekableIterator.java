@@ -29,7 +29,7 @@ import java.util.Map.Entry;
  */
 public interface SeekableIterator<K,V> extends Closeable
 {
-	void seekToFirst();
+	boolean seekToFirst();
 
 	boolean hasNext();
 	
@@ -39,9 +39,9 @@ public interface SeekableIterator<K,V> extends Closeable
 	
 	Entry<K,V> previous();
 	
-	void seekTo(K key);
+	boolean seekTo(K key);
 
 	void close();
 	
-	void seekToLast();
+	boolean seekToLast();
 }

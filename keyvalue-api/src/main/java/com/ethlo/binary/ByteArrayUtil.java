@@ -1,8 +1,8 @@
-package com.ethlo.mycached;
+package com.ethlo.binary;
 
 /*-
  * #%L
- * Key/value MySQL implementation
+ * Key/Value API
  * %%
  * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
@@ -20,16 +20,14 @@ package com.ethlo.mycached;
  * #L%
  */
 
-/**
- * 
- * @author Morten Haraldsen
- */
-public class MyCachedIoException extends RuntimeException
+@SuppressWarnings("ManualArrayCopy")
+public class ByteArrayUtil
 {
-	private static final long serialVersionUID = -3137134728819435345L;
-
-	public MyCachedIoException(String message, Exception exc)
-	{
-		super(message, exc);
-	}
+    public static void set(final byte[] target, int targetOffset, final byte[] source)
+    {
+        for (int i = 0; i < source.length; i++)
+        {
+            target[targetOffset + i] = source[i];
+        }
+    }
 }
