@@ -4,7 +4,7 @@ package com.ethlo.keyvalue.range;
  * #%L
  * Key/value cache
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,16 +33,16 @@ public class GuavaRangeCacheTest
 	public void addRanges()
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100);
-		cache.put(Range.<Integer>closed(0, 9), "value");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
+		cache.put(Range.closed(0, 9), "value");
+		cache.put(Range.closed(10, 19), "value2");
 	}
 	
 	@Test
 	public void getObjectInsideRange()
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100);
-		cache.put(Range.<Integer>closed(0, 9), "value");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
+		cache.put(Range.closed(0, 9), "value");
+		cache.put(Range.closed(10, 19), "value2");
 		assertThat(cache.get(11)).isEqualTo("value2");
 	}
 	
@@ -50,8 +50,8 @@ public class GuavaRangeCacheTest
 	public void getObjectOutsideRange()
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100);
-		cache.put(Range.<Integer>closed(0, 9), "value");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
+		cache.put(Range.closed(0, 9), "value");
+		cache.put(Range.closed(10, 19), "value2");
 		assertThat(cache.get(100)).isNull();
 	}
 	
@@ -59,8 +59,8 @@ public class GuavaRangeCacheTest
 	public void testTTLOnGet() throws InterruptedException
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100, EvictionPolicy.LFU, 10, 100);
-		cache.put(Range.<Integer>closed(0, 9), "value");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
+		cache.put(Range.closed(0, 9), "value");
+		cache.put(Range.closed(10, 19), "value2");
 		Thread.sleep(150);
 		assertThat(cache.get(5)).isNull();
 		assertThat(cache.get(15)).isNull();
@@ -70,8 +70,8 @@ public class GuavaRangeCacheTest
 	public void testTTLPerValue() throws InterruptedException
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100, EvictionPolicy.LFU, 10, 0);
-		cache.put(Range.<Integer>closed(0, 9), "value", 100);
-		cache.put(Range.<Integer>closed(10, 19), "value2");
+		cache.put(Range.closed(0, 9), "value", 100);
+		cache.put(Range.closed(10, 19), "value2");
 		Thread.sleep(150);
 		assertThat(cache.get(5)).isNull();
 		assertThat(cache.get(15)).isEqualTo("value2");
@@ -81,8 +81,8 @@ public class GuavaRangeCacheTest
 	public void testTTLOnGetEntry() throws InterruptedException
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100, EvictionPolicy.LFU, 10, 100);
-		cache.put(Range.<Integer>closed(0, 9), "value");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
+		cache.put(Range.closed(0, 9), "value");
+		cache.put(Range.closed(10, 19), "value2");
 		Thread.sleep(150);
 		assertThat(cache.getEntry(5)).isNull();
 		assertThat(cache.getEntry(15)).isNull();
@@ -92,14 +92,14 @@ public class GuavaRangeCacheTest
 	public void testEvictionLRU()
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(8);
-		cache.put(Range.<Integer>closed(0, 9), "value1");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
-		cache.put(Range.<Integer>closed(20, 29), "value3");
-		cache.put(Range.<Integer>closed(30, 39), "value4");
-		cache.put(Range.<Integer>closed(40, 49), "value5");
-		cache.put(Range.<Integer>closed(50, 59), "value6");
-		cache.put(Range.<Integer>closed(60, 69), "value7");
-		cache.put(Range.<Integer>closed(70, 79), "value8");
+		cache.put(Range.closed(0, 9), "value1");
+		cache.put(Range.closed(10, 19), "value2");
+		cache.put(Range.closed(20, 29), "value3");
+		cache.put(Range.closed(30, 39), "value4");
+		cache.put(Range.closed(40, 49), "value5");
+		cache.put(Range.closed(50, 59), "value6");
+		cache.put(Range.closed(60, 69), "value7");
+		cache.put(Range.closed(70, 79), "value8");
 		assertThat(cache.get(0)).isEqualTo("value1");
 		assertThat(cache.get(10)).isEqualTo("value2");
 		assertThat(cache.get(20)).isEqualTo("value3");
@@ -109,7 +109,7 @@ public class GuavaRangeCacheTest
 		assertThat(cache.get(60)).isEqualTo("value7");
 		assertThat(cache.get(70)).isEqualTo("value8");
 		
-		cache.put(Range.<Integer>closed(80, 89), "value9");
+		cache.put(Range.closed(80, 89), "value9");
 		assertThat(cache.get(0)).isNull();
 		assertThat(cache.get(10)).isNull();
 		assertThat(cache.get(20)).isEqualTo("value3");
@@ -125,10 +125,10 @@ public class GuavaRangeCacheTest
 	public void testEvictionLFU()
 	{
 		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(4, EvictionPolicy.LFU, 25, 0);
-		cache.put(Range.<Integer>closed(0, 9), "value1");
-		cache.put(Range.<Integer>closed(10, 19), "value2");
-		cache.put(Range.<Integer>closed(20, 29), "value3");
-		cache.put(Range.<Integer>closed(30, 39), "value4");
+		cache.put(Range.closed(0, 9), "value1");
+		cache.put(Range.closed(10, 19), "value2");
+		cache.put(Range.closed(20, 29), "value3");
+		cache.put(Range.closed(30, 39), "value4");
 		assertThat(cache.get(0)).isEqualTo("value1");
 		assertThat(cache.get(10)).isEqualTo("value2");
 		assertThat(cache.get(20)).isEqualTo("value3");
@@ -140,7 +140,7 @@ public class GuavaRangeCacheTest
 		cache.get(25);
 		
 		// Add one extra to trigger eviction
-		cache.put(Range.<Integer>closed(80, 89), "value9");
+		cache.put(Range.closed(80, 89), "value9");
 		
 		assertThat(cache.get(0)).isEqualTo("value1");
 		assertThat(cache.get(10)).isEqualTo("value2");

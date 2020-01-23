@@ -4,14 +4,14 @@ package com.ethlo.mycached;
  * #%L
  * Key/value MySQL implementation
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,8 +27,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 import javax.sql.DataSource;
 
@@ -42,273 +45,269 @@ import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.Assert;
 
-import com.ethlo.keyvalue.BatchCasKeyValueDb;
-import com.ethlo.keyvalue.CasHolder;
-import com.ethlo.keyvalue.DataCompressor;
+import com.ethlo.keyvalue.BatchKeyValueDb;
+import com.ethlo.keyvalue.BatchWriteWrapper;
 import com.ethlo.keyvalue.IterableKeyValueDb;
-import com.ethlo.keyvalue.KeyEncoder;
 import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
+import com.ethlo.keyvalue.cas.BatchCasKeyValueDb;
+import com.ethlo.keyvalue.cas.CasHolder;
+import com.ethlo.keyvalue.cas.CasKeyValueDb;
+import com.ethlo.keyvalue.compression.DataCompressor;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
-import com.google.common.base.Function;
+import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 import com.google.common.collect.AbstractIterator;
 
 /**
  * Works by using standard SQL for handling data operations instead of the MySql-MemCached interface
- * 
+ *
  * @author Morten Haraldsen
  */
-public class LegacyMyCachedClientImpl implements 
-	MutatingKeyValueDb<ByteArrayKey, byte[]>,
-	IterableKeyValueDb<ByteArrayKey, byte[]>,
-	BatchCasKeyValueDb<ByteArrayKey, byte[], Long>
+public class LegacyMyCachedClientImpl implements
+        MutatingKeyValueDb<ByteArrayKey, byte[]>,
+        IterableKeyValueDb<ByteArrayKey, byte[]>,
+        BatchKeyValueDb<ByteArrayKey, byte[]>,
+        BatchCasKeyValueDb<ByteArrayKey, byte[], Long>,
+        CasKeyValueDb<ByteArrayKey, byte[], Long>
 {
-	private JdbcTemplate tpl;
-	
-	private final KeyEncoder keyEncoder;
-	private final DataCompressor dataCompressor;
-	
-	private final String getSql;
-	private final String getCasSql;
-	private final String getCasSqlPrefix;
-	private final String getCasSqlFirst;
-	private final String insertSql;
-	private final String replaceSql;
-	private final String replaceCasSql;
-	private final String deleteSql;
-	private final String clearSql;
-	private final RowMapper<byte[]> rowMapper;
-	private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
-	
-	public LegacyMyCachedClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
-	{
-		this.keyEncoder = keyEncoder;
-		this.dataCompressor = dataCompressor;
-		
-		Assert.hasLength(tableName, "tableName cannot be null");
-		Assert.notNull(dataSource, "dataSource cannot be null");
-		this.tpl = new JdbcTemplate(dataSource);
-		
-		this.getSql = "SELECT mvalue FROM " + tableName + " WHERE mkey = ?";
-		this.getCasSql = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey = ?";
-		this.getCasSqlFirst = "SELECT mkey, mvalue, cas_column FROM " + tableName + " ORDER BY mkey";
-		this.getCasSqlPrefix = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey LIKE ?";
-		this.replaceSql = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
-		this.insertSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
-		this.replaceCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
-		this.deleteSql = "DELETE FROM " + tableName + " WHERE mkey = ?";
-		this.clearSql = "DELETE FROM " + tableName;
-		
-		this.rowMapper = new RowMapper<byte[]>()
-		{
-			@Override
-			public byte[] mapRow(ResultSet rs, int rowNum) throws SQLException
-			{
-				final byte[] data = rs.getBytes(1);
-				return dataCompressor.decompress(data);
-			}			
-		};
-		
-		this.casRowMapper = new RowMapper<CasHolder<ByteArrayKey, byte[], Long>>()
-		{
-			@Override
-			public CasHolder<ByteArrayKey, byte[], Long> mapRow(ResultSet rs, int rowNum) throws SQLException
-			{
-				final ByteArrayKey key = new ByteArrayKey(keyEncoder.fromString(rs.getString(1)));
-				final byte[] data = rs.getBytes(2);
-				final byte[] value = dataCompressor.decompress(data);
-				final long cas = rs.getLong(3);
-				return new CasHolder<ByteArrayKey, byte[], Long>(cas, key, value);
-			}
-		};
-	}
-	
-	@Override
-	public byte[] get(final ByteArrayKey key)
-	{
-		final PreparedStatementCreator getPsc = new PreparedStatementCreator()
-		{
-		    @Override
-		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-		    {
-		        final PreparedStatement ps = con.prepareStatement(getSql);
-		        final String strKey = keyEncoder.toString(key.getByteArray());
-		        ps.setString(1, strKey);  
-		        return ps;
-		    }
-		};
-		return DataAccessUtils.singleResult(tpl.query(getPsc, rowMapper));
-	}
+    private JdbcTemplate tpl;
 
-	@Override
-	public void put(final ByteArrayKey key, final byte[] value)
-	{
-		final PreparedStatementCreator creator = new PreparedStatementCreator()
-		{
-		    @Override
-		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-		    {
-		        final PreparedStatement ps = con.prepareStatement(replaceSql);
-		        final String strKey = keyEncoder.toString(key.getByteArray());
-		        ps.setString(1, strKey); 
-		        ps.setBytes(2, dataCompressor.compress(value));
-		        return ps;
-		    }
-		};
-		tpl.update(creator);
-	}
+    private final KeyEncoder keyEncoder;
+    private final DataCompressor dataCompressor;
 
-	@Override
-	public void delete(ByteArrayKey key)
-	{
-		tpl.update(deleteSql, keyEncoder.toString(key.getByteArray()));
-	}
+    private final String getSql;
+    private final String getCasSql;
+    private final String getCasSqlPrefix;
+    private final String getCasSqlFirst;
+    private final String insertSql;
+    private final String replaceSql;
+    private final String replaceCasSql;
+    private final String deleteSql;
+    private final String clearSql;
+    private final RowMapper<byte[]> rowMapper;
+    private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 
-	@Override
-	public void clear()
-	{
-		final PreparedStatementCreator creator = new PreparedStatementCreator()
-		{
-		    @Override
-		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-		    {
-		        return con.prepareStatement(clearSql);
-		    }
-		};
-		tpl.update(creator);
-	}
+    public LegacyMyCachedClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
+    {
+        this.keyEncoder = keyEncoder;
+        this.dataCompressor = dataCompressor;
 
-	@Override
-	public void close()
-	{
-	    
-	}
+        Assert.hasLength(tableName, "tableName cannot be null");
+        Assert.notNull(dataSource, "dataSource cannot be null");
+        this.tpl = new JdbcTemplate(dataSource);
 
-	@Override
-	public CasHolder<ByteArrayKey, byte[], Long> getCas(final ByteArrayKey key)
-	{
-		final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
-		{
-		    @Override
-		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-		    {
-		        final PreparedStatement ps = con.prepareStatement(getCasSql);
-		        final String strKey = keyEncoder.toString(key.getByteArray());
-		        ps.setString(1, strKey);  
-		        return ps;
-		    }
-		};
-		return DataAccessUtils.singleResult(tpl.query(getCasPsc, casRowMapper));
-	}
+        this.getSql = "SELECT mvalue FROM " + tableName + " WHERE mkey = ?";
+        this.getCasSql = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey = ?";
+        this.getCasSqlFirst = "SELECT mkey, mvalue, cas_column FROM " + tableName + " ORDER BY mkey";
+        this.getCasSqlPrefix = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey LIKE ?";
+        this.replaceSql = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
+        this.insertSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
+        this.replaceCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
+        this.deleteSql = "DELETE FROM " + tableName + " WHERE mkey = ?";
+        this.clearSql = "DELETE FROM " + tableName;
 
-	@Override
-	public void putCas(final CasHolder<ByteArrayKey, byte[], Long> cas)
-	{
-		if (cas.getCasValue() != null)
-		{
-			updateWithNonNullCasValue(cas);
-		}
-		else
-		{
-			insertNewDueToNullCasValue(cas);
-		}
-	}
+        this.rowMapper = (rs, rowNum) ->
+        {
+            final byte[] data = rs.getBytes(1);
+            return dataCompressor.decompress(data);
+        };
 
-	private void insertNewDueToNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
-	{
-		final PreparedStatementCreator creator = new PreparedStatementCreator()
-		{
-		    @Override
-		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-		    {
-		        final PreparedStatement ps = con.prepareStatement(insertSql);
-		        final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
-		        ps.setString(1, strKey); 
-		        ps.setBytes(2, dataCompressor.compress(cas.getValue()));
-		        ps.setLong(3, 0L);
-		        return ps;
-		    }
-		};
-		
-		try
-		{
-			tpl.update(creator);
-		}
-		catch (DuplicateKeyException exc)
-		{
-			throw new OptimisticLockingFailureException("Cannot update " + cas.getKey(), exc);
-		}
-	}
+        this.casRowMapper = (rs, rowNum) ->
+        {
+            final ByteArrayKey key = new ByteArrayKey(keyEncoder.fromString(rs.getString(1)));
+            final byte[] data = rs.getBytes(2);
+            final byte[] value = dataCompressor.decompress(data);
+            final long cas = rs.getLong(3);
+            return new CasHolder<ByteArrayKey, byte[], Long>(cas, key, value);
+        };
+    }
 
-	private void updateWithNonNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
-	{
-		final PreparedStatementCreator creator = new PreparedStatementCreator()
-		{
-		    @Override
-		    public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-		    {
-		    	final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
-		    	final long casValue = cas.getCasValue();
-		        final PreparedStatement ps = con.prepareStatement(replaceCasSql);
-		        ps.setBytes(1, dataCompressor.compress(cas.getValue()));
-		        ps.setString(2, strKey);
-		        ps.setLong(3, casValue);
-		        return ps;
-		    }
-		};
-		final int rowsChanged = tpl.update(creator);
-		if (rowsChanged == 0)
-		{
-			throw new OptimisticLockingFailureException("Cannot update data for key " + cas.getKey() + " due to concurrent modification. Details: Attempted CAS value=" + cas.getCasValue());
-		}
-		
-		//return new CasHolder<>(cas.getCasValue(), cas.getKey(), cas.getValue());
-	}
+    @Override
+    public byte[] get(final ByteArrayKey key)
+    {
+        final PreparedStatementCreator getPsc = connection ->
+        {
+            final PreparedStatement ps = connection.prepareStatement(getSql);
+            final String strKey = keyEncoder.toString(key.getByteArray());
+            ps.setString(1, strKey);
+            return ps;
+        };
+        return DataAccessUtils.singleResult(tpl.query(getPsc, rowMapper));
+    }
 
-	@Override
-	public void putBatch(final List<CasHolder<ByteArrayKey, byte[], Long>> casList)
-	{
-		// Hard to solve in any more efficient way
-		for (CasHolder<ByteArrayKey, byte[], Long> cas : casList)
-		{
-			putCas(cas);
-		}
-	}
+    @Override
+    public void put(final ByteArrayKey key, final byte[] value)
+    {
+        putAll(Collections.singletonMap(key, value));
+    }
 
-	@Override
-	public void mutate(ByteArrayKey key, Function<byte[], byte[]> mutator)
-	{
-		final CasHolder<ByteArrayKey, byte[], Long> cas = this.getCas(key);
-		final byte[] result = mutator.apply(cas != null ? Arrays.copyOf(cas.getValue(), cas.getValue().length) : null);
-		
-		if (cas != null)
-		{
-			this.putCas(cas.setValue(result));
-		}
-		else
-		{
-			this.putCas(new CasHolder<ByteArrayKey, byte[], Long>(null, key, result));
-		}
-	}
+    @Override
+    public void putAll(final Map<ByteArrayKey, byte[]> values)
+    {
+        final PreparedStatementCreator creator = connection ->
+        {
+            final PreparedStatement ps = connection.prepareStatement(replaceSql);
+            for (Entry<ByteArrayKey, byte[]> entry : values.entrySet())
+            {
+                final String strKey = keyEncoder.toString(entry.getKey().getByteArray());
+                ps.setString(1, strKey);
+                ps.setBytes(2, dataCompressor.compress(entry.getValue()));
+                ps.addBatch();
+            }
+            return ps;
+        };
+        tpl.update(creator);
+    }
+
+    @Override
+    public void delete(ByteArrayKey key)
+    {
+        tpl.update(deleteSql, keyEncoder.toString(key.getByteArray()));
+    }
+
+    @Override
+    public void clear()
+    {
+        final PreparedStatementCreator creator = new PreparedStatementCreator()
+        {
+            @Override
+            public PreparedStatement createPreparedStatement(Connection con) throws SQLException
+            {
+                return con.prepareStatement(clearSql);
+            }
+        };
+        tpl.update(creator);
+    }
+
+    @Override
+    public void close()
+    {
+
+    }
+
+    @Override
+    public CasHolder<ByteArrayKey, byte[], Long> getCas(final ByteArrayKey key)
+    {
+        final PreparedStatementCreator getCasPsc = con ->
+        {
+            final PreparedStatement ps = con.prepareStatement(getCasSql);
+            final String strKey = keyEncoder.toString(key.getByteArray());
+            ps.setString(1, strKey);
+            return ps;
+        };
+        return DataAccessUtils.singleResult(tpl.query(getCasPsc, casRowMapper));
+    }
+
+    @Override
+    public void putCas(final CasHolder<ByteArrayKey, byte[], Long> cas)
+    {
+        if (cas.getCasValue() != null)
+        {
+            updateWithNonNullCasValue(cas);
+        }
+        else
+        {
+            insertNewDueToNullCasValue(cas);
+        }
+    }
+
+    private void insertNewDueToNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
+    {
+        final PreparedStatementCreator creator = new PreparedStatementCreator()
+        {
+            @Override
+            public PreparedStatement createPreparedStatement(Connection con) throws SQLException
+            {
+                final PreparedStatement ps = con.prepareStatement(insertSql);
+                final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
+                ps.setString(1, strKey);
+                ps.setBytes(2, dataCompressor.compress(cas.getValue()));
+                ps.setLong(3, 0L);
+                return ps;
+            }
+        };
+
+        try
+        {
+            tpl.update(creator);
+        }
+        catch (DuplicateKeyException exc)
+        {
+            throw new OptimisticLockingFailureException("Cannot update " + cas.getKey(), exc);
+        }
+    }
+
+    private void updateWithNonNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
+    {
+        final PreparedStatementCreator creator = con ->
+        {
+            final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
+            final long casValue = cas.getCasValue();
+            final PreparedStatement ps = con.prepareStatement(replaceCasSql);
+            ps.setBytes(1, dataCompressor.compress(cas.getValue()));
+            ps.setString(2, strKey);
+            ps.setLong(3, casValue);
+            return ps;
+        };
+        final int rowsChanged = tpl.update(creator);
+        if (rowsChanged == 0)
+        {
+            throw new OptimisticLockingFailureException("Cannot update data for key " + cas.getKey() + " due to concurrent modification. Details: Attempted CAS value=" + cas.getCasValue());
+        }
+
+        //return new CasHolder<>(cas.getCasValue(), cas.getKey(), cas.getValue());
+    }
+
+    @Override
+    public void putAll(final List<CasHolder<ByteArrayKey, byte[], Long>> casList)
+    {
+        // Hard to solve in any more efficient way as we need to compare the previous version with the new one
+        for (CasHolder<ByteArrayKey, byte[], Long> cas : casList)
+        {
+            putCas(cas);
+        }
+    }
+
+    @Override
+    public void mutate(ByteArrayKey key, Function<byte[], byte[]> mutator)
+    {
+        final CasHolder<ByteArrayKey, byte[], Long> cas = this.getCas(key);
+        final byte[] result = mutator.apply(cas != null ? Arrays.copyOf(cas.getValue(), cas.getValue().length) : null);
+
+        if (cas != null)
+        {
+            this.putCas(cas.setValue(result));
+        }
+        else
+        {
+            this.putCas(new CasHolder<>(null, key, result));
+        }
+    }
 
     @Override
     public SeekableIterator<ByteArrayKey, byte[]> iterator()
     {
         return new JdbcSeekableIterator();
     }
-    
+
+    @Override
+    public void putAll(final BatchWriteWrapper<ByteArrayKey, byte[]> batch)
+    {
+        this.putAll(batch.data());
+    }
+
     private class JdbcSeekableIterator extends AbstractIterator<Entry<ByteArrayKey, byte[]>> implements SeekableIterator<ByteArrayKey, byte[]>
     {
         private ResultSet rs = null;
         private Connection connection;
         private PreparedStatement ps;
-        
+
         @Override
         protected Entry<ByteArrayKey, byte[]> computeNext()
         {
             try
             {
-                if (! rs.isAfterLast())
+                if (!rs.isAfterLast())
                 {
                     final CasHolder<ByteArrayKey, byte[], Long> res = casRowMapper.mapRow(rs, rs.getRow());
                     rs.next();
@@ -337,7 +336,7 @@ public class LegacyMyCachedClientImpl implements
                     throw new DataAccessResourceFailureException(exc.getMessage(), exc);
                 }
             }
-            
+
             if (ps != null)
             {
                 try
@@ -350,7 +349,7 @@ public class LegacyMyCachedClientImpl implements
                     throw new DataAccessResourceFailureException(exc.getMessage(), exc);
                 }
             }
-            
+
             if (connection != null)
             {
                 try
@@ -404,25 +403,21 @@ public class LegacyMyCachedClientImpl implements
         @Override
         public void seekTo(ByteArrayKey key)
         {
-            final PreparedStatementCreator getCasPsc = new PreparedStatementCreator()
+            final PreparedStatementCreator getCasPsc = con ->
             {
-                @Override
-                public PreparedStatement createPreparedStatement(Connection con) throws SQLException
-                {
-                    final PreparedStatement ps = con.prepareStatement(getCasSqlPrefix, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-                    final String strKey = keyEncoder.toString(key.getByteArray());
-                    ps.setString(1, strKey + "%");  
-                    return ps;
-                }
+                final PreparedStatement ps = con.prepareStatement(getCasSqlPrefix, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                final String strKey = keyEncoder.toString(key.getByteArray());
+                ps.setString(1, strKey + "%");
+                return ps;
             };
-            
+
             try
             {
                 close();
                 this.connection = tpl.getDataSource().getConnection();
                 this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
-                if (! this.rs.first())
+                if (!this.rs.first())
                 {
                     throw new EmptyResultDataAccessException(1);
                 }
@@ -445,14 +440,14 @@ public class LegacyMyCachedClientImpl implements
                     return ps;
                 }
             };
-            
+
             try
             {
                 close();
                 this.connection = tpl.getDataSource().getConnection();
                 this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
-                if (! this.rs.first())
+                if (!this.rs.first())
                 {
                     throw new EmptyResultDataAccessException(1);
                 }

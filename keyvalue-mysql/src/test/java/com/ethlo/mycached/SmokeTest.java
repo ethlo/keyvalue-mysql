@@ -4,7 +4,7 @@ package com.ethlo.mycached;
  * #%L
  * Key/value MySQL implementation
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ethlo.keyvalue.CasHolder;
-import com.ethlo.keyvalue.CasKeyValueDb;
+import com.ethlo.keyvalue.cas.CasHolder;
+import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.IterableKeyValueDb;
 import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;

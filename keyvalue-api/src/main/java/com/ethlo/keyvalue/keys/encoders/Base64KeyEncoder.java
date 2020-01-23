@@ -1,10 +1,10 @@
-package com.ethlo.keyvalue;
+package com.ethlo.keyvalue.keys.encoders;
 
 /*-
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,24 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
-public interface DataCompressor
+import java.util.Base64;
+import java.util.Base64.Decoder;
+import java.util.Base64.Encoder;
+
+public class Base64KeyEncoder implements KeyEncoder
 {
-    byte[] compress(byte[] uncompressed);
+    private final Encoder encoder = Base64.getEncoder();
+    private final Decoder decoder = Base64.getDecoder();
     
-    byte[] decompress(byte[] compressed);
+    @Override
+    public String toString(byte[] key)
+    {
+        return encoder.encodeToString(key);
+    }
+
+    @Override
+    public byte[] fromString(String key)
+    {
+        return decoder.decode(key);
+    }
 }

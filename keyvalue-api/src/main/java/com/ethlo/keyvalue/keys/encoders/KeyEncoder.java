@@ -1,10 +1,10 @@
-package com.ethlo.keyvalue;
+package com.ethlo.keyvalue.keys.encoders;
 
 /*-
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,9 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
-/**
- * 
- * @author Morten Haraldsen
- *
- * @param <K>
- * @param <NK>
- * @param <V>
- * @param <NV>
- */
-public interface KeyValueSerializer<K, NK, V, NV>
+public interface KeyEncoder
 {
-	NK getKey(K key);
-	
-	K extractKey(NK nativeKey);
-	
-	NV getValue(V value);
-	
-	V extractValue(NV nativeValue);
+    String toString(byte[] key);
+    
+    byte[] fromString(String key);
 }

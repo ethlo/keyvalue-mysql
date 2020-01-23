@@ -4,7 +4,7 @@ package com.ethlo.keyvalue;
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.ethlo.keyvalue.compression.NopDataCompressor;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
+import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 
 /**
  * 

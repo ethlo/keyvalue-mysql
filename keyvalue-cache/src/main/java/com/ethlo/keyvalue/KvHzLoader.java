@@ -4,7 +4,7 @@ package com.ethlo.keyvalue;
  * #%L
  * Key/value cache
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,11 @@ import java.util.Map.Entry;
 
 import org.springframework.dao.OptimisticLockingFailureException;
 
+import com.ethlo.keyvalue.cas.BatchCasKeyValueDb;
+import com.ethlo.keyvalue.cas.CasHolder;
 import com.ethlo.keyvalue.keys.Key;
 
-public class KvHzLoader<K extends Key,V,C> implements HzLoadStore<K, CasHolder<K,V,C>>
+public class KvHzLoader<K extends Key,V,C extends Comparable<C>> implements HzLoadStore<K, CasHolder<K,V,C>>
 {
 	private BatchCasKeyValueDb<K, V, C> delegate;
 
@@ -76,7 +78,7 @@ public class KvHzLoader<K extends Key,V,C> implements HzLoadStore<K, CasHolder<K
 				else
 				{
 					// Value was deleted in the meantime
-					store(key, new CasHolder<K, V, C>(null, key, value.getValue()));
+					store(key, new CasHolder<>(null, key, value.getValue()));
 				}
 			}
 		}

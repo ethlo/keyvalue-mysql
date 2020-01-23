@@ -4,7 +4,7 @@ package com.ethlo.mycached;
  * #%L
  * Key/value MySQL implementation
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,52 +64,11 @@ public class MysqlUtil
 		if(tableExists(dbName) || allowCreate)
 		{
 			createTable(dbName);
-			ensureMapped(dbName);
 		}
 		else
 		{
 			throw new MyCachedIoException("The database table " + dbName + " does not exist and allowCreate is false", null);
 		}
-	}
-	
-	private void ensureMapped(String dbName)
-	{
-		if (! mappingExists(schemaName, dbName))
-		{
-			logger.info("No mapping for {} in database {}, adding mapping", dbName, schemaName);
-			
-			final Map<String, String> params = new TreeMap<>();
-			params.put("name", schemaName + "_" + dbName);
-			params.put("db_schema", schemaName);
-			params.put("db_table", dbName);
-			params.put("key_columns", "mkey");
-			params.put("value_columns", "mvalue");
-			params.put("flags", "flags");
-			params.put("cas_column", "cas_column");
-			params.put("expire_time_column", "expire_time_column");
-			params.put("unique_idx_name_on_key", "PRIMARY");
-			final String sql = 
-				"INSERT INTO " + INNODB_MEMCACHE_DB_NAME + ".containers " +
-				"(name, db_schema, db_table, key_columns, value_columns, flags, cas_column, expire_time_column, unique_idx_name_on_key)" +
-				"VALUES(:name, :db_schema, :db_table, :key_columns, :value_columns, :flags, :cas_column, :expire_time_column, :unique_idx_name_on_key)";
-			tpl.update(sql, params);
-		}
-	}
-	
-	private boolean mappingExists(String schemaName, String dbName)
-	{
-		final String sql = "SELECT * FROM " + INNODB_MEMCACHE_DB_NAME + ".containers WHERE db_schema=:db_schema AND db_table=:db_table";
-		final Map<String, String> params = new TreeMap<>();
-		params.put("db_schema", schemaName);
-		params.put("db_table", dbName);
-		return tpl.query(sql, params, new ResultSetExtractor<Boolean>()
-		{
-			@Override
-			public Boolean extractData(ResultSet rs) throws SQLException, DataAccessException
-			{
-				return rs.next();
-			}
-		});
 	}
 
 	public void createTable(String dbName)

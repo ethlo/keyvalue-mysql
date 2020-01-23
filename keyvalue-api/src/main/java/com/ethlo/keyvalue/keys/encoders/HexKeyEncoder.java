@@ -1,10 +1,10 @@
-package com.ethlo.keyvalue;
+package com.ethlo.keyvalue.keys.encoders;
 
 /*-
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,19 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
-public class NopDataCompressor implements DataCompressor
+import com.google.common.io.BaseEncoding;
+
+public class HexKeyEncoder implements KeyEncoder
 {
     @Override
-    public byte[] compress(byte[] uncompressed)
+    public String toString(byte[] key)
     {
-        return uncompressed;
+        return BaseEncoding.base16().encode(key);
     }
 
     @Override
-    public byte[] decompress(byte[] compressed)
+    public byte[] fromString(String key)
     {
-        return compressed;
+        return BaseEncoding.base16().decode(key);
     }
 }

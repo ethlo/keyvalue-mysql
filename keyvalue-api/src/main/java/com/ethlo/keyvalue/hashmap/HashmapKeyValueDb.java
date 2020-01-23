@@ -4,7 +4,7 @@ package com.ethlo.keyvalue.hashmap;
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import com.ethlo.keyvalue.CasHolder;
-import com.ethlo.keyvalue.CasKeyValueDb;
-import com.ethlo.keyvalue.HexKeyEncoder;
+import com.ethlo.keyvalue.cas.CasHolder;
+import com.ethlo.keyvalue.cas.CasKeyValueDb;
+import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 import com.ethlo.keyvalue.IterableKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
 import com.ethlo.keyvalue.keys.ByteArrayKey;

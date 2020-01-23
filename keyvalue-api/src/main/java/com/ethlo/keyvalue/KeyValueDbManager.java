@@ -4,7 +4,7 @@ package com.ethlo.keyvalue;
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ethlo.keyvalue.compression.DataCompressor;
 import com.ethlo.keyvalue.keys.Key;
+import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 
 /**
  * 
@@ -54,7 +56,7 @@ public abstract class KeyValueDbManager<K extends Key, V, T extends KeyValueDb<K
 		return this.dbs.get(name);
 	}
 
-	protected void close(String name) throws Exception
+	protected void close(String name)
 	{
 		final T db = this.getOpenDb(name);
 		if (db != null)

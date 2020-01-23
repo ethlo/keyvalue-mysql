@@ -1,10 +1,10 @@
-package com.ethlo.keyvalue;
+package com.ethlo.keyvalue.cas;
 
 /*-
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
+import com.ethlo.keyvalue.KeyValueDb;
 import com.ethlo.keyvalue.keys.Key;
 
 /**
@@ -34,7 +35,7 @@ import com.ethlo.keyvalue.keys.Key;
  * @param <V> Value type
  * @param <C> CAS type
  */
-public interface CasKeyValueDb<K extends Key,V,C> extends KeyValueDb<K, V>
+public interface CasKeyValueDb<K extends Key,V,C extends Comparable<C>> extends KeyValueDb<K, V>
 {
 	CasHolder<K,V,C> getCas(K key);
 	

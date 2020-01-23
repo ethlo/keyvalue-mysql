@@ -1,10 +1,10 @@
-package com.ethlo.keyvalue;
+package com.ethlo.keyvalue.cas;
 
 /*-
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,20 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
-public interface KeyEncoder
+import java.util.List;
+
+import com.ethlo.keyvalue.cas.CasHolder;
+import com.ethlo.keyvalue.cas.CasKeyValueDb;
+import com.ethlo.keyvalue.keys.Key;
+
+
+/**
+ * Extension of {@link CasKeyValueDb} that allows to do batched writes.
+ * 
+ * @author Morten Haraldsen
+ * 
+ */
+public interface BatchCasKeyValueDb<K extends Key,V,C extends Comparable<C>> extends CasKeyValueDb<K,V,C>
 {
-    String toString(byte[] key);
-    
-    byte[] fromString(String key);
+	void putAll(List<CasHolder<K,V,C>> casList);
 }

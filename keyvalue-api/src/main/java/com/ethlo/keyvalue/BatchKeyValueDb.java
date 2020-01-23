@@ -4,7 +4,7 @@ package com.ethlo.keyvalue;
  * #%L
  * Key/Value API
  * %%
- * Copyright (C) 2015 - 2018 Morten Haraldsen (ethlo)
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ package com.ethlo.keyvalue;
 
 import com.ethlo.keyvalue.keys.Key;
 
-
 /**
  * 
  * @author Morten Haraldsen
@@ -32,5 +31,5 @@ import com.ethlo.keyvalue.keys.Key;
  */
 public interface BatchKeyValueDb<K extends Key,V> extends KeyValueDb<K, V>
 {
-	void flush(BatchWriteWrapper<K, V> batch);
+	void putAll(BatchWriteWrapper<K, V> batch);
 }
