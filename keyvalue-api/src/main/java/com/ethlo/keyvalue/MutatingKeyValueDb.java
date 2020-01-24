@@ -31,13 +31,13 @@ import com.ethlo.keyvalue.keys.Key;
  * @param <V> Value type
  * @author Morten Haraldsen
  */
-public interface MutatingKeyValueDb<K extends Key, V> extends KeyValueDb<K, V>
+public interface MutatingKeyValueDb<K extends Key<K>, V> extends KeyValueDb<K, V>
 {
     /**
      * Value mutator method that should handle atomic updates using optimistic/pessimistic locking
      *
-     * @param key
-     * @param mutator
+     * @param key     The key for the data to mutate
+     * @param mutator The function that modifies the content taking the existing data as input and returning the new modified data
      */
     void mutate(K key, Function<V, V> mutator);
 }

@@ -47,11 +47,8 @@ public class GuavaRangeCache<K extends Comparable<K>, V> implements RangeCache<K
     private final EvictionPolicy evictionPolicy;
     private final int evictionPercent;
     private final long ttl;
-
-    public enum EvictionPolicy
-    {
-        LRU, LFU
-    }
+    private final Comparator<AccessData<V>> LFU_COMP = Comparator.comparingLong(AccessData::getAccessCount);
+    private final Comparator<AccessData<V>> LRU_COMP = Comparator.comparingLong(AccessData::getLastAccessTime);
 
     public GuavaRangeCache()
     {
@@ -207,6 +204,17 @@ public class GuavaRangeCache<K extends Comparable<K>, V> implements RangeCache<K
         return rangeMap.asMapOfRanges().size();
     }
 
+    @Override
+    public long getRangeCount()
+    {
+        return this.getCount(backingMap);
+    }
+
+    public enum EvictionPolicy
+    {
+        LRU, LFU
+    }
+
     private class AccessData<D> implements Serializable
     {
         private static final long serialVersionUID = 5619216026006141788L;
@@ -234,15 +242,15 @@ public class GuavaRangeCache<K extends Comparable<K>, V> implements RangeCache<K
             return this;
         }
 
+        public D getData()
+        {
+            return data;
+        }
+
         public AccessData<D> setData(D data)
         {
             this.data = data;
             return this;
-        }
-
-        public D getData()
-        {
-            return data;
         }
 
         public void accessed()
@@ -265,15 +273,5 @@ public class GuavaRangeCache<K extends Comparable<K>, V> implements RangeCache<K
         {
             return accessCount;
         }
-    }
-
-    private final Comparator<AccessData<V>> LFU_COMP = Comparator.comparingLong(AccessData::getAccessCount);
-
-    private final Comparator<AccessData<V>> LRU_COMP = Comparator.comparingLong(AccessData::getLastAccessTime);
-
-    @Override
-    public long getRangeCount()
-    {
-        return this.getCount(backingMap);
     }
 }

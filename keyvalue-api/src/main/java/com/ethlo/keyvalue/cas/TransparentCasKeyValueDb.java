@@ -20,28 +20,29 @@ package com.ethlo.keyvalue.cas;
  * #L%
  */
 
-import java.util.Optional;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ethlo.keyvalue.keys.Key;
 
-
 /**
  * Throw-away wrapper around a single batch of writes for key-value database, allowing the CAS values to be transparently handled.
  *
- * @param <K>
- * @param <V>
- * @param <C>
+ * @param <K> The key type
+ * @param <V> The value type
+ * @param <C> The cas value type
  * @author Morten Haraldsen
  */
-public class TransparentCasKeyValueDb<K extends Key, V, C extends Comparable<C>> implements CasKeyValueDb<K, V, C>
+public class TransparentCasKeyValueDb<K extends Key<K>, V, C extends Comparable<C>> implements CasKeyValueDb<K, V, C>
 {
-    private final CasKeyValueDb<K, V, C> db;
-    private final ConcurrentHashMap<K, Optional<C>> revisionHolder;
     private static final Logger logger = LoggerFactory.getLogger(TransparentCasKeyValueDb.class);
+    private final CasKeyValueDb<K, V, C> db;
+    private final ConcurrentHashMap<K, ValueHolder<C>> revisionHolder;
 
     public TransparentCasKeyValueDb(CasKeyValueDb<K, V, C> casKeyValueDb)
     {
@@ -64,11 +65,11 @@ public class TransparentCasKeyValueDb<K extends Key, V, C extends Comparable<C>>
             //				throw new ConcurrentModificationException("Value for key " + key + " has been concurrently modified");
             //			}
             //
-            this.revisionHolder.put(key, Optional.of(currentCasValue));
+            this.revisionHolder.put(key, ValueHolder.of(currentCasValue));
             logger.debug("get({}) with CAS value {}", key, currentCasValue);
             return casHolder.getValue();
         }
-        this.revisionHolder.put(key, Optional.empty());
+        this.revisionHolder.put(key, ValueHolder.empty());
         logger.debug("get({}) with empty result", key);
         return null;
     }
@@ -76,7 +77,7 @@ public class TransparentCasKeyValueDb<K extends Key, V, C extends Comparable<C>>
     @Override
     public void put(K key, V value)
     {
-        final Optional<C> casValue = this.revisionHolder.get(key);
+        final ValueHolder<C> casValue = this.revisionHolder.get(key);
         if (casValue != null)
         {
             final C cas = casValue.orElse(null);
@@ -119,5 +120,99 @@ public class TransparentCasKeyValueDb<K extends Key, V, C extends Comparable<C>>
     public void putCas(CasHolder<K, V, C> cas)
     {
         db.putCas(cas);
+    }
+
+    private static class ValueHolder<T>
+    {
+        private static final ValueHolder<?> EMPTY = new ValueHolder<>();
+        private final T value;
+
+        private ValueHolder()
+        {
+            this.value = null;
+        }
+
+        public static <T> ValueHolder<T> empty()
+        {
+            return (ValueHolder<T>) EMPTY;
+        }
+
+        private ValueHolder(T value)
+        {
+            this.value = Objects.requireNonNull(value);
+        }
+
+        public static <T> ValueHolder<T> of(T value)
+        {
+            return new ValueHolder<>(value);
+        }
+
+        public static <T> ValueHolder<T> ofNullable(T value)
+        {
+            return value == null ? empty() : of(value);
+        }
+
+        public T get()
+        {
+            if (this.value == null)
+            {
+                throw new NoSuchElementException("No value present");
+            }
+            else
+            {
+                return this.value;
+            }
+        }
+
+        public boolean isPresent()
+        {
+            return this.value != null;
+        }
+
+        public boolean isEmpty()
+        {
+            return this.value == null;
+        }
+
+        public void ifPresent(Consumer<? super T> action)
+        {
+            if (this.value != null)
+            {
+                action.accept(this.value);
+            }
+
+        }
+
+        public T orElse(T other)
+        {
+            return this.value != null ? this.value : other;
+        }
+
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+                return true;
+            }
+            else if (!(obj instanceof ValueHolder))
+            {
+                return false;
+            }
+            else
+            {
+                ValueHolder<?> other = (ValueHolder<?>) obj;
+                return Objects.equals(this.value, other.value);
+            }
+        }
+
+        public int hashCode()
+        {
+            return Objects.hashCode(this.value);
+        }
+
+        public String toString()
+        {
+            return this.value != null ? String.format("Optional[%s]", this.value) : "Optional.empty";
+        }
     }
 }

@@ -35,13 +35,13 @@ import com.ethlo.keyvalue.keys.Key;
  * @see CasKeyValueDb
  * @see BatchCasKeyValueDb
  */
-public interface KeyValueDb<K extends Key, V> extends AutoCloseable
+public interface KeyValueDb<K extends Key<K>, V> extends AutoCloseable
 {
     V get(K key);
 
-    default Map<K,V> getAll(Set<K> keys)
+    default Map<K, V> getAll(Set<K> keys)
     {
-        return keys.stream().collect(Collectors.toMap(k->k, this::get));
+        return keys.stream().collect(Collectors.toMap(k -> k, this::get));
     }
 
     void put(K key, V value);

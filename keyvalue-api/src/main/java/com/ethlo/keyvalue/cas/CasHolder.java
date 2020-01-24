@@ -29,9 +29,8 @@ import com.google.common.collect.ComparisonChain;
 public class CasHolder<K, V, C extends Comparable<C>> implements Serializable, Comparable<CasHolder<K, V, C>>
 {
     private static final long serialVersionUID = 8391662893296912918L;
-
-    private C casValue;
     private final K key;
+    private C casValue;
     private V value;
 
     public CasHolder(C casValue, K key, V value)

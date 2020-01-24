@@ -34,7 +34,7 @@ import com.ethlo.keyvalue.keys.Key;
  * @param <C>
  * @author Morten Haraldsen
  */
-public class BatchCasWriteWrapper<K extends Key, V, C extends Comparable<C>> implements BatchCasKeyValueDb<K, V, C>
+public class BatchCasWriteWrapper<K extends Key<K>, V, C extends Comparable<C>> implements BatchCasKeyValueDb<K, V, C>
 {
     private final List<CasHolder<K, V, C>> buffer = new LinkedList<>();
     private final BatchCasKeyValueDb<K, V, C> kvdb;

@@ -24,11 +24,11 @@ import javax.sql.DataSource;
 
 import org.springframework.dao.DataAccessResourceFailureException;
 
+import com.ethlo.keyvalue.KeyValueDbManager;
 import com.ethlo.keyvalue.cas.BatchCasKeyValueDb;
 import com.ethlo.keyvalue.compression.DataCompressor;
-import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
-import com.ethlo.keyvalue.KeyValueDbManager;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
+import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 
 /**
  * @author Morten Haraldsen

@@ -37,10 +37,9 @@ import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 @SpringBootTest(classes = TestCfg.class)
 public abstract class AbstractKeyValueDbTest
 {
+    protected KeyValueDb<ByteArrayKey, byte[]> db;
     @Autowired
     private KeyValueDbManager kvDbManager;
-
-    protected KeyValueDb<ByteArrayKey, byte[]> db;
 
     @Before
     public void fetchDb()
