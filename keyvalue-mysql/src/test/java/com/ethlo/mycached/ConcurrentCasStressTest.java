@@ -30,37 +30,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
-import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
 public class ConcurrentCasStressTest extends AbstractTest
 {
-    @Autowired
-    private MysqlClientManagerImpl clientManager;
-
-    private MutatingKeyValueDb<ByteArrayKey, byte[]> client;
-
-    @SuppressWarnings("unchecked")
-    @Before
-    public void setup()
-    {
-        final String dbName = "_test";
-        this.client = (MutatingKeyValueDb<ByteArrayKey, byte[]>) clientManager.createMainDb(dbName, true, keyEncoder, dataCompressor);
-    }
-
     @Test
     public void casStressTest() throws Exception
     {
-        final int threadCount = 200;
-        final int iterations = 500;
+        final int threadCount = 100;
+        final int iterations = 200;
         final List<Callable<Void>> threadArr = new ArrayList<>(threadCount);
         final AtomicInteger failed = new AtomicInteger();
         for (int threadIdx = 0; threadIdx < threadCount; threadIdx++)
@@ -76,7 +59,7 @@ public class ConcurrentCasStressTest extends AbstractTest
                     {
                         try
                         {
-                            client.mutate(key, (Function<byte[], byte[]>) input ->
+                            mutatingKeyValueDb.mutate(key, (Function<byte[], byte[]>) input ->
                             {
                                 final int curCount = input != null ? Ints.fromByteArray(input) : 0;
 
@@ -88,6 +71,7 @@ public class ConcurrentCasStressTest extends AbstractTest
                         catch (OptimisticLockingFailureException exc)
                         {
                             failed.incrementAndGet();
+                            failing = true;
                         }
                     }
                 }
@@ -109,7 +93,7 @@ public class ConcurrentCasStressTest extends AbstractTest
         for (int i = 0; i < iterations; i++)
         {
             final ByteArrayKey key = new ByteArrayKey(Ints.toByteArray(i));
-            final int count = Ints.fromByteArray(client.get(key));
+            final int count = Ints.fromByteArray(mutatingKeyValueDb.get(key));
             assertThat(count).isEqualTo(threadCount);
         }
         System.out.println("Failed attempts " + failed.get());
@@ -133,7 +117,7 @@ public class ConcurrentCasStressTest extends AbstractTest
                     {
                         try
                         {
-                            client.mutate(key, (Function<byte[], byte[]>) input ->
+                            mutatingKeyValueDb.mutate(key, (Function<byte[], byte[]>) input ->
                             {
                                 final int curCount = input != null ? Ints.fromByteArray(input) : 0;
 
@@ -163,7 +147,7 @@ public class ConcurrentCasStressTest extends AbstractTest
             res.get();
         }
 
-        final int count = Ints.fromByteArray(client.get(key));
+        final int count = Ints.fromByteArray(mutatingKeyValueDb.get(key));
         System.out.println(count + " (failed attempts " + failed.get() + ")");
         assertThat(count).isEqualTo(threadCount * iterations);
     }

@@ -28,19 +28,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import javax.annotation.Resource;
-
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.ethlo.keyvalue.IterableKeyValueDb;
-import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
 import com.ethlo.keyvalue.cas.CasHolder;
-import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
-import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
 import com.google.common.base.Function;
 
 public class SmokeTest extends AbstractTest
@@ -51,30 +45,18 @@ public class SmokeTest extends AbstractTest
     final ByteArrayKey keyBytes3 = new ByteArrayKey(new byte[]{1, 2});
     final ByteArrayKey keyBytes4 = new ByteArrayKey(new byte[]{2, 0});
 
-    @Resource
-    private MysqlClientManagerImpl clientManager;
-
-    private CasKeyValueDb<ByteArrayKey, byte[], Long> client;
-
-    @Before
-    public void setup()
-    {
-        final String dbName = "someTestData";
-        this.client = clientManager.createMainDb(dbName, true, keyEncoder, dataCompressor);
-    }
-
     @Test
     public void testGetAll()
     {
         final Map<ByteArrayKey, byte[]> data = createFiveEntries();
-        client.putAll(data);
+        mutatingKeyValueDb.putAll(data);
 
         final Set<ByteArrayKey> keys = new TreeSet<>();
         keys.add(keyBytes0);
         keys.add(keyBytes1);
         keys.add(keyBytes2);
 
-        final Map<ByteArrayKey, byte[]> result = client.getAll(keys);
+        final Map<ByteArrayKey, byte[]> result = mutatingKeyValueDb.getAll(keys);
         assertThat(result).hasSize(3);
         assertThat(result.keySet()).containsExactlyInAnyOrder(keyBytes0, keyBytes1, keyBytes2);
     }
@@ -84,8 +66,8 @@ public class SmokeTest extends AbstractTest
     {
         final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 7});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
-        client.put(keyBytes, valueBytes);
-        final byte[] retVal = client.get(keyBytes);
+        mutatingKeyValueDb.put(keyBytes, valueBytes);
+        final byte[] retVal = mutatingKeyValueDb.get(keyBytes);
         Assert.assertArrayEquals(valueBytes, retVal);
     }
 
@@ -94,25 +76,25 @@ public class SmokeTest extends AbstractTest
     {
         final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{4, 5, 6, 7, 9, 9});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
-        client.put(keyBytes, valueBytes);
+        mutatingKeyValueDb.put(keyBytes, valueBytes);
 
-        final CasHolder<ByteArrayKey, byte[], Long> res = client.getCas(keyBytes);
+        final CasHolder<ByteArrayKey, byte[], Long> res = casKeyValueDb.getCas(keyBytes);
         Assert.assertEquals(keyBytes, res.getKey());
         Assert.assertEquals(Long.valueOf(0L), res.getCasValue());
         Assert.assertArrayEquals(valueBytes, res.getValue());
 
         final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsMakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
         res.setValue(valueBytesUpdated);
-        client.putCas(res);
+        casKeyValueDb.putCas(res);
     }
 
     @Test
     public void testIterate()
     {
         final Map<ByteArrayKey, byte[]> data = createFiveEntries();
-        client.putAll(data);
+        mutatingKeyValueDb.putAll(data);
 
-        final IterableKeyValueDb<ByteArrayKey, byte[]> idb = (IterableKeyValueDb<ByteArrayKey, byte[]>) client;
+        final IterableKeyValueDb<ByteArrayKey, byte[]> idb = (IterableKeyValueDb<ByteArrayKey, byte[]>) mutatingKeyValueDb;
         int count = 0;
         try (final SeekableIterator<ByteArrayKey, byte[]> iter = idb.iterator())
         {
@@ -147,12 +129,11 @@ public class SmokeTest extends AbstractTest
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
         final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsMakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
 
-        client.put(key, valueBytes);
+        mutatingKeyValueDb.put(key, valueBytes);
 
-        @SuppressWarnings("unchecked") final MutatingKeyValueDb<ByteArrayKey, byte[]> mdb = (MutatingKeyValueDb<ByteArrayKey, byte[]>) client;
-        mdb.mutate(key, (Function<byte[], byte[]>) input -> valueBytesUpdated);
+        mutatingKeyValueDb.mutate(key, (Function<byte[], byte[]>) input -> valueBytesUpdated);
 
-        final CasHolder<ByteArrayKey, byte[], Long> res = client.getCas(key);
+        final CasHolder<ByteArrayKey, byte[], Long> res = casKeyValueDb.getCas(key);
         Assert.assertEquals(Long.valueOf(1L), res.getCasValue());
         Assert.assertArrayEquals(valueBytesUpdated, res.getValue());
     }
