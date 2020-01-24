@@ -42,7 +42,7 @@ import com.hazelcast.core.IMap;
 public class MutableHazelcastCachedKeyValueDb<K extends Key, V, C extends Comparable<C>> implements MutatingKeyValueDb<K, V>, BatchCasKeyValueDb<K, V, C>
 {
     private final BatchCasKeyValueDb<K, V, C> delegate;
-    private IMap<K, CasHolder<K, V, C>> cacheMap;
+    private final IMap<K, CasHolder<K, V, C>> cacheMap;
 
     public MutableHazelcastCachedKeyValueDb(BatchCasKeyValueDb<K, V, C> delegate, HazelcastInstance hazelcastInstance, MapConfig mapConfig, String mapName)
     {
@@ -53,7 +53,7 @@ public class MutableHazelcastCachedKeyValueDb<K extends Key, V, C extends Compar
     private IMap<K, CasHolder<K, V, C>> setupMap(HazelcastInstance hazelcastInstance, String mapName, MapConfig mapConfig)
     {
         // Set map store
-        mapConfig.getMapStoreConfig().setImplementation(new KvHzLoader<K, V, C>(delegate));
+        mapConfig.getMapStoreConfig().setImplementation(new KvHzLoader<>(delegate));
         hazelcastInstance.getConfig().getMapConfigs().put(mapName, mapConfig);
         return hazelcastInstance.getMap(mapName);
     }
@@ -88,7 +88,7 @@ public class MutableHazelcastCachedKeyValueDb<K extends Key, V, C extends Compar
     @Override
     public void put(K key, V value)
     {
-        this.cacheMap.set(key, new CasHolder<K, V, C>(null, key, value));
+        this.cacheMap.set(key, new CasHolder<>(null, key, value));
     }
 
     @Override public void putAll(final Map<K, V> values)
@@ -104,7 +104,7 @@ public class MutableHazelcastCachedKeyValueDb<K extends Key, V, C extends Compar
         if (existing != null)
         {
             // Replace existing
-            final boolean replaced = this.cacheMap.replace(key, existing, new CasHolder<K, V, C>(existing.getCasValue(), key, output));
+            final boolean replaced = this.cacheMap.replace(key, existing, new CasHolder<>(existing.getCasValue(), key, output));
             if (!replaced)
             {
                 throw new OptimisticLockingFailureException("Could not mutate data for key " + key);
@@ -113,7 +113,7 @@ public class MutableHazelcastCachedKeyValueDb<K extends Key, V, C extends Compar
         else
         {
             // No existing version
-            if (this.cacheMap.put(key, new CasHolder<K, V, C>(null, key, output)) != null)
+            if (this.cacheMap.put(key, new CasHolder<>(null, key, output)) != null)
             {
                 throw new OptimisticLockingFailureException("Could not mutate data for key " + key);
             }

@@ -32,7 +32,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void addRanges()
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(100);
 		cache.put(Range.closed(0, 9), "value");
 		cache.put(Range.closed(10, 19), "value2");
 	}
@@ -40,7 +40,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void getObjectInsideRange()
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(100);
 		cache.put(Range.closed(0, 9), "value");
 		cache.put(Range.closed(10, 19), "value2");
 		assertThat(cache.get(11)).isEqualTo("value2");
@@ -49,7 +49,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void getObjectOutsideRange()
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(100);
 		cache.put(Range.closed(0, 9), "value");
 		cache.put(Range.closed(10, 19), "value2");
 		assertThat(cache.get(100)).isNull();
@@ -58,7 +58,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void testTTLOnGet() throws InterruptedException
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100, EvictionPolicy.LFU, 10, 100);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(100, EvictionPolicy.LFU, 10, 100);
 		cache.put(Range.closed(0, 9), "value");
 		cache.put(Range.closed(10, 19), "value2");
 		Thread.sleep(150);
@@ -69,7 +69,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void testTTLPerValue() throws InterruptedException
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100, EvictionPolicy.LFU, 10, 0);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(100, EvictionPolicy.LFU, 10, 0);
 		cache.put(Range.closed(0, 9), "value", 100);
 		cache.put(Range.closed(10, 19), "value2");
 		Thread.sleep(150);
@@ -80,7 +80,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void testTTLOnGetEntry() throws InterruptedException
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(100, EvictionPolicy.LFU, 10, 100);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(100, EvictionPolicy.LFU, 10, 100);
 		cache.put(Range.closed(0, 9), "value");
 		cache.put(Range.closed(10, 19), "value2");
 		Thread.sleep(150);
@@ -91,7 +91,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void testEvictionLRU()
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(8);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(8);
 		cache.put(Range.closed(0, 9), "value1");
 		cache.put(Range.closed(10, 19), "value2");
 		cache.put(Range.closed(20, 29), "value3");
@@ -124,7 +124,7 @@ public class GuavaRangeCacheTest
 	@Test
 	public void testEvictionLFU()
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(4, EvictionPolicy.LFU, 25, 0);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(4, EvictionPolicy.LFU, 25, 0);
 		cache.put(Range.closed(0, 9), "value1");
 		cache.put(Range.closed(10, 19), "value2");
 		cache.put(Range.closed(20, 29), "value3");
@@ -152,7 +152,7 @@ public class GuavaRangeCacheTest
 	@Test(timeout=5_000)
 	public void testEvictionPerformance()
 	{
-		final RangeCache<Integer, String> cache = new GuavaRangeCache<Integer, String>(10_000);
+		final RangeCache<Integer, String> cache = new GuavaRangeCache<>(10_000);
 		for (int i = 0; i < 500_000; i++)
 		{
 			cache.put(Range.closed(i, i+1), Integer.toString(i));

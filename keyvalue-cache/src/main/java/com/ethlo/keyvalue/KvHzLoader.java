@@ -33,7 +33,7 @@ import com.ethlo.keyvalue.keys.Key;
 
 public class KvHzLoader<K extends Key,V,C extends Comparable<C>> implements HzLoadStore<K, CasHolder<K,V,C>>
 {
-	private BatchCasKeyValueDb<K, V, C> delegate;
+	private final BatchCasKeyValueDb<K, V, C> delegate;
 
 	public KvHzLoader(BatchCasKeyValueDb<K, V, C> delegate)
 	{

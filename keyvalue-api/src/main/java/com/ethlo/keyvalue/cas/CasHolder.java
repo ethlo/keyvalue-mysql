@@ -31,7 +31,7 @@ public class CasHolder<K, V, C extends Comparable<C>> implements Serializable, C
     private static final long serialVersionUID = 8391662893296912918L;
 
     private C casValue;
-    private K key;
+    private final K key;
     private V value;
 
     public CasHolder(C casValue, K key, V value)

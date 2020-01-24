@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
@@ -76,7 +77,7 @@ public class MysqlClientImpl implements
 {
     private static final Logger logger = LoggerFactory.getLogger(MysqlClientImpl.class);
 
-    private JdbcTemplate tpl;
+    private final JdbcTemplate tpl;
 
     private final KeyEncoder keyEncoder;
     private final DataCompressor dataCompressor;
@@ -124,16 +125,21 @@ public class MysqlClientImpl implements
             final byte[] data = rs.getBytes(2);
             final byte[] value = dataCompressor.decompress(data);
             final long cas = rs.getLong(3);
-            return new CasHolder<ByteArrayKey, byte[], Long>(cas, key, value);
+            return new CasHolder<>(cas, key, value);
         };
     }
 
     @Override
     public byte[] get(final ByteArrayKey key)
     {
+        return getData(key, getSql, rowMapper);
+    }
+
+    private <T> T getData(final ByteArrayKey key, final String sql, final RowMapper<T> rowMapper)
+    {
         final PreparedStatementCreator getPsc = connection ->
         {
-            final PreparedStatement ps = connection.prepareStatement(getSql);
+            final PreparedStatement ps = connection.prepareStatement(sql);
             final String strKey = keyEncoder.toString(key.getByteArray());
             ps.setString(1, strKey);
             return ps;
@@ -192,14 +198,7 @@ public class MysqlClientImpl implements
     @Override
     public CasHolder<ByteArrayKey, byte[], Long> getCas(final ByteArrayKey key)
     {
-        final PreparedStatementCreator getCasPsc = con ->
-        {
-            final PreparedStatement ps = con.prepareStatement(getCasSql);
-            final String strKey = keyEncoder.toString(key.getByteArray());
-            ps.setString(1, strKey);
-            return ps;
-        };
-        return DataAccessUtils.singleResult(tpl.query(getCasPsc, casRowMapper));
+        return getData(key, getCasSql, casRowMapper);
     }
 
     @Override
@@ -310,7 +309,7 @@ public class MysqlClientImpl implements
                 {
                     final CasHolder<ByteArrayKey, byte[], Long> res = casRowMapper.mapRow(rs, rs.getRow());
                     rs.next();
-                    return new AbstractMap.SimpleEntry<>(res.getKey(), res.getValue());
+                    return new AbstractMap.SimpleEntry<>(Objects.requireNonNull(res).getKey(), res.getValue());
                 }
                 return endOfData();
             }
@@ -389,7 +388,7 @@ public class MysqlClientImpl implements
                 if (rs.previous())
                 {
                     final CasHolder<ByteArrayKey, byte[], Long> res = casRowMapper.mapRow(rs, rs.getRow());
-                    return new AbstractMap.SimpleEntry<>(res.getKey(), res.getValue());
+                    return new AbstractMap.SimpleEntry<>(Objects.requireNonNull(res).getKey(), res.getValue());
                 }
             }
             catch (SQLException exc)
@@ -413,7 +412,7 @@ public class MysqlClientImpl implements
             try
             {
                 close();
-                this.connection = tpl.getDataSource().getConnection();
+                this.connection = Objects.requireNonNull(tpl.getDataSource()).getConnection();
                 this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
                 return this.rs.first();
@@ -432,7 +431,7 @@ public class MysqlClientImpl implements
             try
             {
                 close();
-                this.connection = tpl.getDataSource().getConnection();
+                this.connection = Objects.requireNonNull(tpl.getDataSource()).getConnection();
                 this.ps = getCasPsc.createPreparedStatement(connection);
                 this.rs = ps.executeQuery();
                 return rs.first();

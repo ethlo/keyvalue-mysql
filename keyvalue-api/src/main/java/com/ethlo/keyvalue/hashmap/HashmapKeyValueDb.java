@@ -37,7 +37,7 @@ import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
  */
 public class HashmapKeyValueDb implements CasKeyValueDb<ByteArrayKey, byte[], Long>, IterableKeyValueDb<ByteArrayKey, byte[]>
 {
-    private ConcurrentSkipListMap<ByteArrayKey, byte[]> data = new ConcurrentSkipListMap<>();
+    private final ConcurrentSkipListMap<ByteArrayKey, byte[]> data = new ConcurrentSkipListMap<>();
 
     @Override
     public byte[] get(ByteArrayKey key)
@@ -70,7 +70,7 @@ public class HashmapKeyValueDb implements CasKeyValueDb<ByteArrayKey, byte[], Lo
         final byte[] value = this.get(key);
         if (value != null)
         {
-            return new CasHolder<ByteArrayKey, byte[], Long>(0L, key, value);
+            return new CasHolder<>(0L, key, value);
         }
         return null;
     }

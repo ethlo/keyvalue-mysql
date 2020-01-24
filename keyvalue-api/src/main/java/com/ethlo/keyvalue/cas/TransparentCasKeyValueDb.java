@@ -79,7 +79,7 @@ public class TransparentCasKeyValueDb<K extends Key, V, C extends Comparable<C>>
         final Optional<C> casValue = this.revisionHolder.get(key);
         if (casValue != null)
         {
-            final C cas = casValue.isPresent() ? casValue.get() : null;
+            final C cas = casValue.orElse(null);
             logger.debug("put({}) with CAS value {}", key, cas);
             try
             {

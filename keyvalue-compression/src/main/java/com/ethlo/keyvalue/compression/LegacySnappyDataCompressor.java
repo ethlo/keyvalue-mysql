@@ -27,7 +27,7 @@ import java.io.UncheckedIOException;
 
 import com.google.common.io.ByteStreams;
 
-@SuppressWarnings({"deprecation", "UnstableApiUsage"})
+@SuppressWarnings({"deprecation"})
 public class LegacySnappyDataCompressor implements DataCompressor
 {
     @Override

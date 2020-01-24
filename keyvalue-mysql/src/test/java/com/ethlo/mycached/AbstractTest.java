@@ -40,8 +40,8 @@ import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
 //@Transactional
 public abstract class AbstractTest
 {
-    protected KeyEncoder keyEncoder = new HexKeyEncoder();
-    protected DataCompressor dataCompressor = new NopDataCompressor();
+    protected final KeyEncoder keyEncoder = new HexKeyEncoder();
+    protected final DataCompressor dataCompressor = new NopDataCompressor();
 
     protected MutatingKeyValueDb<ByteArrayKey, byte[]> mutatingKeyValueDb;
     protected CasKeyValueDb<ByteArrayKey, byte[], Long> casKeyValueDb;

@@ -27,7 +27,7 @@ import java.util.Arrays;
 
 import com.google.common.io.BaseEncoding;
 
-public class ByteArrayKey extends Key implements Comparable<ByteArrayKey>
+public class ByteArrayKey extends Key<ByteArrayKey>
 {
     private static final long serialVersionUID = -6752644647644955221L;
 
@@ -82,7 +82,7 @@ public class ByteArrayKey extends Key implements Comparable<ByteArrayKey>
     }
 
     @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
+    public void readExternal(ObjectInput in) throws IOException
     {
         keyData = new byte[in.readInt()];
         in.readFully(keyData);
@@ -114,7 +114,7 @@ public class ByteArrayKey extends Key implements Comparable<ByteArrayKey>
             {
                 return 1; // "a > b"
             }
-            else if (pastA && pastB)
+            else if (pastA)
             {
                 return 0; // "a = b", same length, all items equal
             }

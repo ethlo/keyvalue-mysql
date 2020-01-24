@@ -34,8 +34,8 @@ import com.hazelcast.core.ITopic;
 public class SyncedRangeCache<K extends Comparable<K>, V> implements RangeCache<K, V>
 {
     private final RangeCache<K, V> delegate;
-    private ITopic<RangeCacheInvalidationMessage<K>> topic;
-    private String memberUuid;
+    private final ITopic<RangeCacheInvalidationMessage<K>> topic;
+    private final String memberUuid;
 
     public SyncedRangeCache(RangeCache<K, V> rangeCache, HazelcastInstance hazelcastInstance, final String cacheId)
     {
@@ -93,14 +93,14 @@ public class SyncedRangeCache<K extends Comparable<K>, V> implements RangeCache<
     public void clear()
     {
         delegate.clear();
-        topic.publish(new RangeCacheInvalidationMessage<K>(memberUuid));
+        topic.publish(new RangeCacheInvalidationMessage<>(memberUuid));
     }
 
     @Override
     public void remove(Range<K> range)
     {
         delegate.remove(range);
-        topic.publish(new RangeCacheInvalidationMessage<K>(memberUuid, range));
+        topic.publish(new RangeCacheInvalidationMessage<>(memberUuid, range));
     }
 
     @Override
@@ -113,6 +113,6 @@ public class SyncedRangeCache<K extends Comparable<K>, V> implements RangeCache<
     public void put(Range<K> range, V value, long ttl)
     {
         delegate.put(range, value, ttl);
-        topic.publish(new RangeCacheInvalidationMessage<K>(memberUuid, range));
+        topic.publish(new RangeCacheInvalidationMessage<>(memberUuid, range));
     }
 }

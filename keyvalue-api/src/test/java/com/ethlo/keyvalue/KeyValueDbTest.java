@@ -21,14 +21,9 @@ package com.ethlo.keyvalue;
  */
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
-import com.ethlo.keyvalue.compression.NopDataCompressor;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
-import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 
 /**
  * @author Morten Haraldsen

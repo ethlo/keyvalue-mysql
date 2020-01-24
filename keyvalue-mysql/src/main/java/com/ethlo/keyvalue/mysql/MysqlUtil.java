@@ -44,9 +44,9 @@ public class MysqlUtil
     public static final int TABLE_NAME_MAX_LENGTH = 64;
 
     private static final Logger logger = LoggerFactory.getLogger(MysqlUtil.class);
-    private DataSource dataSource;
-    private NamedParameterJdbcTemplate tpl;
-    private String schemaName;
+    private final DataSource dataSource;
+    private final NamedParameterJdbcTemplate tpl;
+    private final String schemaName;
 
     public MysqlUtil(String schemaName, DataSource dataSource)
     {

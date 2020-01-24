@@ -36,7 +36,7 @@ import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
  */
 public abstract class KeyValueDbManager<K extends Key, V, T extends KeyValueDb<K, V>> implements Closeable
 {
-	private Map<String, T> dbs = new HashMap<>();
+	private final Map<String, T> dbs = new HashMap<>();
 
 	protected abstract T createMainDb(String dbName, boolean create, KeyEncoder keyEncoder, DataCompressor dataCompressor);
 	

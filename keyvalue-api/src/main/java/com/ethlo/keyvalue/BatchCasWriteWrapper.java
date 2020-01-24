@@ -38,7 +38,7 @@ public class BatchCasWriteWrapper<K extends Key, V, C extends Comparable<C>> imp
 {
     private final List<CasHolder<K, V, C>> buffer = new LinkedList<>();
     private final BatchCasKeyValueDb<K, V, C> kvdb;
-    private int batchSize;
+    private final int batchSize;
 
     public BatchCasWriteWrapper(BatchCasKeyValueDb<K, V, C> kvdb, int batchSize)
     {
