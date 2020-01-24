@@ -35,14 +35,14 @@ import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 public class KeyValueDbTest extends AbstractKeyValueDbTest
 {
     @Autowired
-    private KeyValueDbManager<ByteArrayKey, byte[], KeyValueDb<ByteArrayKey, byte[]>> dbManager;
+    private KeyValueDbManager<ByteArrayKey, byte[], KeyValueDb<ByteArrayKey, byte[]>> kvDbManager;
 
     private KeyValueDb<ByteArrayKey, byte[]> db;
 
     @Before
     public void fetchDb()
     {
-        this.db = this.dbManager.getDb("test", true, new HexKeyEncoder(), new NopDataCompressor());
+        this.db = this.kvDbManager.getDb("test", true, new HexKeyEncoder(), new NopDataCompressor());
     }
 
     @Test
