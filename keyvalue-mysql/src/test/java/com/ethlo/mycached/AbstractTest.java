@@ -32,7 +32,7 @@ import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestCfg.class, properties = "spring.datasource.type=com.zaxxer.hikari.HikariDataSource")
-@Transactional
+//@Transactional
 public abstract class AbstractTest
 {
     protected KeyEncoder keyEncoder = new HexKeyEncoder();

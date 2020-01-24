@@ -9,9 +9,9 @@ package com.ethlo.keyvalue.compression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,6 @@ package com.ethlo.keyvalue.compression;
  */
 
 import java.util.Arrays;
-
-import javax.annotation.Nonnull;
 
 import com.ethlo.binary.ByteArrayUtil;
 import com.ethlo.binary.UnsignedUtil;
@@ -35,11 +33,11 @@ import net.jpountz.lz4.LZ4Factory;
 public class Lz4DataCompressor implements DataCompressor
 {
     public static final int UNCOMPRESSED_LENGTH_PREFIX_LENGTH = 4;
-    private final LZ4Factory instance = LZ4Factory.fastestInstance();
+    private final LZ4Factory instance = LZ4Factory.fastestJavaInstance();
     private final LZ4Compressor util = instance.fastCompressor();
 
     @Override
-    public byte[] compress(@Nonnull final byte[] uncompressed)
+    public byte[] compress(final byte[] uncompressed)
     {
         final int maxCompressedLength = util.maxCompressedLength(uncompressed.length);
         final byte[] buffer = new byte[UNCOMPRESSED_LENGTH_PREFIX_LENGTH + maxCompressedLength];
@@ -49,7 +47,7 @@ public class Lz4DataCompressor implements DataCompressor
     }
 
     @Override
-    public byte[] decompress(@Nonnull final byte[] compressed)
+    public byte[] decompress(final byte[] compressed)
     {
         final int decompressedLength = Math.toIntExact(UnsignedUtil.getUnsignedInt(compressed, 0, UNCOMPRESSED_LENGTH_PREFIX_LENGTH));
         return instance.fastDecompressor().decompress(compressed, UNCOMPRESSED_LENGTH_PREFIX_LENGTH, decompressedLength);
