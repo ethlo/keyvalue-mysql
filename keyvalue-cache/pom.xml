@@ -11,7 +11,7 @@
     <dependencies>
         <dependency>
             <groupId>com.ethlo.keyvalue</groupId>
-            <artifactId>keyvalue-api</artifactId>
+            <artifactId>keyvalue-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
