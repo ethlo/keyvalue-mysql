@@ -29,7 +29,7 @@ public class Lzma2DataCompressorTest extends AbstractDataCompressorTest
     }
 
     @Override
-    protected int getPerformanceTestIteration()
+    protected int getPerformanceTestIterations()
     {
         return 50_000;
     }

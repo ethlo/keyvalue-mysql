@@ -1,5 +1,25 @@
 package com.ethlo.keyvalue.compression;
 
+/*-
+ * #%L
+ * keyvalue-compression
+ * %%
+ * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
@@ -17,11 +37,15 @@ public abstract class AbstractDataCompressorTest
             "Duis porta, nulla ac luctus imperdiet, massa quam egestas urna, ut imperdiet diam sapien sit amet " +
             "magna. Praesent sit amet sapien ante. Vestibulum convallis faucibus lectus, quis tincidunt" +
             " metus ultrices sed. Etiam dignissim tortor eget dignissim fermentum. Quisque scelerisque tortor" +
-            " magna, non rutrum est rutrum sed. Fusce facilisis felis purus, vestibulum consequat orci tincidunt ut." +
-            " Aliquam sit amet pharetra augue, non molestie velit. Ut mollis sed lectus a tristique. Aenean vitae orci et " +
-            "eros euismod rhoncus vel nec tortor. Nam faucibus, orci a pretium dictum, dolor nisi laoreet tellus, " +
-            "nec tempor est leo quis nulla. Duis in felis sapien. Donec luctus leo ac sollicitudin ornare. Maecenas facilisis" +
-            " neque id sem facilisis, id tincidunt velit sagittis. Suspendisse lacinia urna ornare laoreet interdum.")
+            " magna, non rutrum est rutrum sed. Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
+        "Duis porta, nulla ac luctus imperdiet, massa quam egestas urna, ut imperdiet diam sapien sit amet " +
+        "magna. Praesent sit amet sapien ante. Vestibulum convallis faucibus lectus, quis tincidunt" +
+        " metus ultrices sed. Etiam dignissim tortor eget dignissim fermentum. Quisque scelerisque tortor" +
+        " magna, non rutrum est rutrum sed. Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
+        "Duis porta, nulla ac luctus imperdiet, massa quam egestas urna, ut imperdiet diam sapien sit amet " +
+        "magna. Praesent sit amet sapien ante. Vestibulum convallis faucibus lectus, quis tincidunt" +
+        " metus ultrices sed. Etiam dignissim tortor eget dignissim fermentum. Quisque scelerisque tortor" +
+        " magna, non rutrum est rutrum sed. ")
             .getBytes(StandardCharsets.UTF_8);
 
     private final DataCompressor dataCompressor = create();
@@ -35,7 +59,7 @@ public abstract class AbstractDataCompressorTest
         final byte[] compressed = dataCompressor.compress(sampledata);
         assertThat(compressed).isNotNull();
         assertThat(compressed).hasSizeGreaterThan(10);
-        final int claimedUncompressedLength = Math.toIntExact(UnsignedUtil.getUnsignedInt(compressed, 1, 3));
+        final int claimedUncompressedLength = Math.toIntExact(UnsignedUtil.decodeUnsigned(compressed, 1, 3));
         assertThat(claimedUncompressedLength).isEqualTo(sampledata.length);
         final byte[] decompressed = dataCompressor.decompress(compressed);
         assertThat(decompressed).isEqualTo(sampledata);
@@ -45,14 +69,25 @@ public abstract class AbstractDataCompressorTest
     public void performanceTest()
     {
         final Chronograph chronograph = Chronograph.create();
-        chronograph.start("compress");
-        for (int i = 0; i < getPerformanceTestIteration(); i++)
+        chronograph.start("compress " + getPerformanceTestIterations());
+        for (int i = 0; i < getPerformanceTestIterations(); i++)
         {
             assertThat(dataCompressor.compress(sampledata)).isNotNull();
         }
         chronograph.stop();
+
+        final byte[] compressed = dataCompressor.compress(sampledata);
+        final double ratio = sampledata.length / (double) compressed.length;
+        logger.info("Uncompressed: {}\nCompressed: {}\nRatio: {}", sampledata.length, compressed.length, ratio);
+        chronograph.start("decompress " + getPerformanceTestIterations());
+        for (int i = 0; i < getPerformanceTestIterations(); i++)
+        {
+            assertThat(dataCompressor.decompress(compressed)).isNotNull();
+        }
+        chronograph.stop();
+
         logger.info(chronograph.prettyPrint());
     }
 
-    protected abstract int getPerformanceTestIteration();
+    protected abstract int getPerformanceTestIterations();
 }

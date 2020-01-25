@@ -1,17 +1,17 @@
-package com.ethlo.keyvalue.compression;
+package com.ethlo.binary;
 
 /*-
  * #%L
- * keyvalue-compression
+ * keyvalue-binary
  * %%
  * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,18 @@ package com.ethlo.keyvalue.compression;
  * #L%
  */
 
-public class Lz4DataCompressorTest extends AbstractDataCompressorTest
-{
-    @Override
-    protected DataCompressor create()
-    {
-        return new Lz4DataCompressor();
-    }
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
 
-    @Override
-    protected int getPerformanceTestIterations()
+public class ByteArrayUtilTest
+{
+    private final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    @Test
+    public void set()
     {
-        return 1_000_000;
+        final byte[] testData = data.clone();
+        ByteArrayUtil.set(testData, 2, new byte[]{0, 0, 0});
+        Assertions.assertThat(testData).isEqualTo(new byte[]{0, 1, 0, 0, 0, 5, 6, 7, 8, 9});
     }
 }
