@@ -20,36 +20,35 @@ package com.ethlo.keyvalue.compression;
  * #L%
  */
 
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.OutputStream;
 
-import com.ethlo.binary.ByteArrayUtil;
-import com.ethlo.binary.UnsignedUtil;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 
-/**
- * LZ4 compressor that prefixes the compressed value with 4 bytes denoting the length of the uncompressed data
- */
-public class Lz4DataCompressor implements DataCompressor
+public class Lz4DataCompressor extends AbstractDataCompressor
 {
-    public static final int UNCOMPRESSED_LENGTH_PREFIX_LENGTH = 4;
     private final LZ4Factory instance = LZ4Factory.fastestJavaInstance();
-    private final LZ4Compressor util = instance.fastCompressor();
 
-    @Override
-    public byte[] compress(final byte[] uncompressed)
+    public Lz4DataCompressor()
     {
-        final int maxCompressedLength = util.maxCompressedLength(uncompressed.length);
-        final byte[] buffer = new byte[UNCOMPRESSED_LENGTH_PREFIX_LENGTH + maxCompressedLength];
-        final int compressedLength = instance.fastCompressor().compress(uncompressed, 0, uncompressed.length, buffer, UNCOMPRESSED_LENGTH_PREFIX_LENGTH);
-        ByteArrayUtil.set(buffer, 0, UnsignedUtil.unsignedInt(uncompressed.length, 4));
-        return Arrays.copyOf(buffer, UNCOMPRESSED_LENGTH_PREFIX_LENGTH + compressedLength);
+        super(CompressionType.LZ4.getId());
     }
 
     @Override
-    public byte[] decompress(final byte[] compressed)
+    protected void handleCompression(final byte[] uncompressed, OutputStream outputStream) throws IOException
     {
-        final int decompressedLength = Math.toIntExact(UnsignedUtil.getUnsignedInt(compressed, 0, UNCOMPRESSED_LENGTH_PREFIX_LENGTH));
-        return instance.fastDecompressor().decompress(compressed, UNCOMPRESSED_LENGTH_PREFIX_LENGTH, decompressedLength);
+        final LZ4Compressor compressor = instance.fastCompressor();
+        final byte[] buffer = new byte[compressor.maxCompressedLength(uncompressed.length)];
+        final int length = compressor.compress(uncompressed, 0, uncompressed.length, buffer, 0);
+        outputStream.write(buffer, 0, length);
+    }
+
+    @Override
+    public void handleDecompression(final int uncompressedLength, int inputOffset, final byte[] compressed, OutputStream out) throws IOException
+    {
+        final byte[] buffer = new byte[uncompressedLength];
+        instance.fastDecompressor().decompress(compressed, inputOffset, buffer, 0, buffer.length);
+        out.write(buffer);
     }
 }

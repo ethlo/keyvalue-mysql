@@ -20,19 +20,19 @@ package com.ethlo.keyvalue.keys.encoders;
  * #L%
  */
 
-import com.google.common.io.BaseEncoding;
+import com.ethlo.binary.Hex;
 
 public class HexKeyEncoder implements KeyEncoder
 {
     @Override
     public String toString(byte[] key)
     {
-        return BaseEncoding.base16().encode(key);
+        return Hex.encode(key);
     }
 
     @Override
     public byte[] fromString(String key)
     {
-        return BaseEncoding.base16().decode(key);
+        return Hex.decode(key);
     }
 }

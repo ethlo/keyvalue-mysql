@@ -20,23 +20,17 @@ package com.ethlo.keyvalue.compression;
  * #L%
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.charset.StandardCharsets;
-
-import org.junit.Test;
-
-public class LegacySnappyDataCompressorTest
+public class Lzma2DataCompressorTest extends AbstractDataCompressorTest
 {
-    private final byte[] sampledata = "hello there! !/(#/649870ÆØ34".getBytes(StandardCharsets.UTF_8);
-    private final DataCompressor dataCompressor = new LegacySnappyDataCompressor();
-
-    @Test
-    public void compressAndDecompress()
+    @Override
+    protected DataCompressor create()
     {
-        final byte[] compressed = dataCompressor.compress(sampledata);
-        assertThat(compressed).isNotNull();
-        final byte[] decompressed = dataCompressor.decompress(compressed);
-        assertThat(decompressed).isEqualTo(sampledata);
+        return new Lzma2DataCompressor();
+    }
+
+    @Override
+    protected int getPerformanceTestIteration()
+    {
+        return 50_000;
     }
 }

@@ -19,11 +19,19 @@
             <groupId>org.iq80.snappy</groupId>
             <artifactId>snappy</artifactId>
             <version>0.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.tukaani</groupId>
+            <artifactId>xz</artifactId>
+            <version>1.8</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.lz4</groupId>
             <artifactId>lz4-java</artifactId>
             <version>1.7.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -33,6 +41,12 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.ethlo.time</groupId>
+            <artifactId>chronograph</artifactId>
+            <version>1.2.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

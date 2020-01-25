@@ -25,7 +25,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
-import com.google.common.io.BaseEncoding;
+import com.ethlo.binary.Hex;
 
 public class ByteArrayKey extends Key<ByteArrayKey>
 {
@@ -71,7 +71,7 @@ public class ByteArrayKey extends Key<ByteArrayKey>
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " [" + BaseEncoding.base16().encode(keyData) + "]";
+        return getClass().getSimpleName() + " [" + Hex.encode(keyData) + "]";
     }
 
     @Override

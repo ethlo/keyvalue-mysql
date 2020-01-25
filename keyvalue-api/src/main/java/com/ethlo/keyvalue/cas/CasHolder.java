@@ -24,8 +24,6 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Objects;
 
-import com.google.common.collect.ComparisonChain;
-
 public class CasHolder<K, V, C extends Comparable<C>> implements Serializable, Comparable<CasHolder<K, V, C>>
 {
     private static final long serialVersionUID = 8391662893296912918L;
@@ -147,6 +145,14 @@ public class CasHolder<K, V, C extends Comparable<C>> implements Serializable, C
     @Override
     public int compareTo(final CasHolder<K, V, C> casHolder)
     {
-        return ComparisonChain.start().compare(casValue, casHolder.getCasValue()).result();
+        if (Objects.equals(casValue, casHolder.getValue()))
+        {
+            return 0;
+        }
+        else if (casValue == null)
+        {
+            return -1;
+        }
+        return casValue.compareTo(casHolder.getCasValue());
     }
 }

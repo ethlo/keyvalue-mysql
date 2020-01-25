@@ -25,4 +25,6 @@ public interface DataCompressor
     byte[] compress(byte[] uncompressed);
 
     byte[] decompress(byte[] compressed);
+
+    int getType();
 }

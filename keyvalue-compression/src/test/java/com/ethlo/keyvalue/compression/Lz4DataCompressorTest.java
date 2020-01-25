@@ -20,28 +20,17 @@ package com.ethlo.keyvalue.compression;
  * #L%
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.charset.StandardCharsets;
-
-import org.junit.Test;
-
-import com.ethlo.binary.UnsignedUtil;
-
-public class Lz4DataCompressorTest
+public class Lz4DataCompressorTest extends AbstractDataCompressorTest
 {
-    private final byte[] sampledata = "hello there! !/(#/649870ÆØ34".getBytes(StandardCharsets.UTF_8);
-    private final DataCompressor dataCompressor = new Lz4DataCompressor();
-
-    @Test
-    public void compressAndDecompress()
+    @Override
+    protected DataCompressor create()
     {
-        final byte[] compressed = dataCompressor.compress(sampledata);
-        assertThat(compressed).isNotNull();
-        assertThat(compressed).hasSizeGreaterThan(4 + 1);
-        final int claimedUncompressedLength = Math.toIntExact(UnsignedUtil.getUnsignedInt(compressed, 0, 4));
-        assertThat(claimedUncompressedLength).isEqualTo(sampledata.length);
-        final byte[] decompressed = dataCompressor.decompress(compressed);
-        assertThat(decompressed).isEqualTo(sampledata);
+        return new Lz4DataCompressor();
+    }
+
+    @Override
+    protected int getPerformanceTestIteration()
+    {
+        return 1_000_000;
     }
 }

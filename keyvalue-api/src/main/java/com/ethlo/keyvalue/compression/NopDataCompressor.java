@@ -33,4 +33,10 @@ public class NopDataCompressor implements DataCompressor
     {
         return compressed;
     }
+
+    @Override
+    public int getType()
+    {
+        return 0;
+    }
 }
