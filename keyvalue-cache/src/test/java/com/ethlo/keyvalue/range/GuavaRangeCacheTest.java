@@ -20,7 +20,7 @@ package com.ethlo.keyvalue.range;
  * #L%
  */
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
