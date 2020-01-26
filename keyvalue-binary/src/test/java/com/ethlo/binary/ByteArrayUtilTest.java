@@ -31,7 +31,7 @@ public class ByteArrayUtilTest
     public void set()
     {
         final byte[] testData = data.clone();
-        ByteArrayUtil.set(testData, 2, new byte[]{0, 0, 0});
+        ByteArrayUtil.set(new byte[]{0, 0, 0}, testData, 2);
         Assertions.assertThat(testData).isEqualTo(new byte[]{0, 1, 0, 0, 0, 5, 6, 7, 8, 9});
     }
 }

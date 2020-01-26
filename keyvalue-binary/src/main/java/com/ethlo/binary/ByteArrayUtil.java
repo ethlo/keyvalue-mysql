@@ -23,11 +23,32 @@ package com.ethlo.binary;
 @SuppressWarnings("ManualArrayCopy")
 public class ByteArrayUtil
 {
-    public static void set(final byte[] target, int targetOffset, final byte[] source)
+    /**
+     * Set the byte in the source in the target
+     * @param source The source data
+     * @param target The target data
+     * @param targetOffset The offset in the target where to overwrite the bytes
+     */
+    public static void set(final byte[] source, final byte[] target, int targetOffset)
     {
         for (int i = 0; i < source.length; i++)
         {
             target[targetOffset + i] = source[i];
         }
+    }
+
+    /**
+     * Merge two byte arrays
+     *
+     * @param a first byte array
+     * @param b second byte array
+     * @return The merged array
+     */
+    public static byte[] merge(byte[] a, byte[] b)
+    {
+        final byte[] res = new byte[a.length + b.length];
+        System.arraycopy(a, 0, res, 0, a.length);
+        System.arraycopy(b, 0, res, a.length, b.length);
+        return res;
     }
 }
