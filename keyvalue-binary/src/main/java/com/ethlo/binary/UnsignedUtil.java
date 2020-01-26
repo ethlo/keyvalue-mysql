@@ -23,13 +23,13 @@ package com.ethlo.binary;
 public class UnsignedUtil
 {
     public static final long MAX_UNSIGNED_63BIT_INT_VALUE = 9_223_372_036_854_775_807L;
-    public static final long MAX_UNSIGNED_56BIT_INT_VALUE = 0xffffffffffffffL;
-    public static final long MAX_UNSIGNED_48BIT_INT_VALUE = 0xffffffffffffL;
-    public static final long MAX_UNSIGNED_40BIT_INT_VALUE = 0xffffffffffL;
-    public static final long MAX_UNSIGNED_32BIT_INT_VALUE = 0xffffffffL;
-    public static final long MAX_UNSIGNED_24BIT_INT_VALUE = 0xffffffL;
-    public static final long MAX_UNSIGNED_16BIT_INT_VALUE = 0xffffL;
-    public static final long MAX_UNSIGNED_8BIT_INT_VALUE = 0xffL;
+    public static final long MAX_UNSIGNED_56BIT_INT_VALUE = 72_057_594_037_927_935L;
+    public static final long MAX_UNSIGNED_48BIT_INT_VALUE = 281_474_976_710_655L;
+    public static final long MAX_UNSIGNED_40BIT_INT_VALUE = 1_099_511_627_775L;
+    public static final long MAX_UNSIGNED_32BIT_INT_VALUE = 4_294_967_295L;
+    public static final long MAX_UNSIGNED_24BIT_INT_VALUE = 16_777_215L;
+    public static final long MAX_UNSIGNED_16BIT_INT_VALUE = 65_535L;
+    public static final long MAX_UNSIGNED_8BIT_INT_VALUE = 255L;
     public static final int BITS_IN_BYTE = 8;
     public static final int BYTES_IN_LONG = 8;
 
