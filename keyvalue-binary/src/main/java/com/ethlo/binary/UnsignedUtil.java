@@ -22,22 +22,23 @@ package com.ethlo.binary;
 
 public class UnsignedUtil
 {
-    public static final long MAX_UNSIGNED_64BIT_INT_VALUE = (long) Math.pow(2.0D, 64.0D) - 1L;
-    public static final long MAX_UNSIGNED_56BIT_INT_VALUE = (long) Math.pow(2.0D, 56.0D) - 1L;
-    public static final long MAX_UNSIGNED_48BIT_INT_VALUE = (long) Math.pow(2.0D, 48.0D) - 1L;
-    public static final long MAX_UNSIGNED_40BIT_INT_VALUE = (long) Math.pow(2.0D, 40.0D) - 1L;
-    public static final long MAX_UNSIGNED_32BIT_INT_VALUE = 4_294_967_295L;
-    public static final long MAX_UNSIGNED_24BIT_INT_VALUE = 16_777_215L;
-    public static final long MAX_UNSIGNED_16BIT_INT_VALUE = 65_535L;
-    public static final long MAX_UNSIGNED_8BIT_INT_VALUE = 255L;
+    public static final long MAX_UNSIGNED_63BIT_INT_VALUE = 9_223_372_036_854_775_806L;
+    public static final long MAX_UNSIGNED_56BIT_INT_VALUE = 0xffffffffffffffL;
+    public static final long MAX_UNSIGNED_48BIT_INT_VALUE = 0xffffffffffffL;
+    public static final long MAX_UNSIGNED_40BIT_INT_VALUE = 0xffffffffffL;
+    public static final long MAX_UNSIGNED_32BIT_INT_VALUE = 0xffffffffL;
+    public static final long MAX_UNSIGNED_24BIT_INT_VALUE = 0xffffffL;
+    public static final long MAX_UNSIGNED_16BIT_INT_VALUE = 0xffffL;
+    public static final long MAX_UNSIGNED_8BIT_INT_VALUE = 0xffL;
     public static final int BITS_IN_BYTE = 8;
     public static final int BYTES_IN_LONG = 8;
 
     private static final long[] bytesToMaxValue = new long[]
             {
                     MAX_UNSIGNED_8BIT_INT_VALUE, MAX_UNSIGNED_16BIT_INT_VALUE, MAX_UNSIGNED_24BIT_INT_VALUE, MAX_UNSIGNED_32BIT_INT_VALUE,
-                    MAX_UNSIGNED_40BIT_INT_VALUE, MAX_UNSIGNED_48BIT_INT_VALUE, MAX_UNSIGNED_56BIT_INT_VALUE, MAX_UNSIGNED_64BIT_INT_VALUE
+                    MAX_UNSIGNED_40BIT_INT_VALUE, MAX_UNSIGNED_48BIT_INT_VALUE, MAX_UNSIGNED_56BIT_INT_VALUE, MAX_UNSIGNED_63BIT_INT_VALUE
             };
+    public static final double LOG2 = Math.log(2);
 
     public static byte[] encodeUnsigned(long value, int length)
     {
@@ -53,7 +54,7 @@ public class UnsignedUtil
 
     public static long getMaxSize(final int byteCount)
     {
-        if (byteCount < 0L)
+        if (byteCount <= 0L)
         {
             throw new IllegalArgumentException("An unsigned number requires at least 1 byte");
         }
@@ -110,7 +111,7 @@ public class UnsignedUtil
 
         if (offset + length > data.length)
         {
-            throw new ArrayIndexOutOfBoundsException("Cannot access bytes " + offset + "-" + (offset + length - 1) + " as array length is only " + data.length);
+            throw new ArrayIndexOutOfBoundsException("Cannot access bytes with index " + offset + " to " + (offset + length - 1) + " as the array length is only " + data.length);
         }
 
         long l = 0;
@@ -131,35 +132,18 @@ public class UnsignedUtil
         {
             throw new IllegalArgumentException("An unsigned number must be 0 or positive");
         }
-        else if (value <= MAX_UNSIGNED_8BIT_INT_VALUE)
+
+        if (value <= MAX_UNSIGNED_48BIT_INT_VALUE)
         {
-            return 1;
-        }
-        else if (value <= MAX_UNSIGNED_16BIT_INT_VALUE)
-        {
-            return 2;
-        }
-        else if (value <= MAX_UNSIGNED_24BIT_INT_VALUE)
-        {
-            return 3;
-        }
-        else if (value <= MAX_UNSIGNED_40BIT_INT_VALUE)
-        {
-            return 5;
-        }
-        else if (value <= MAX_UNSIGNED_48BIT_INT_VALUE)
-        {
-            return 6;
+            // Higher values than this loses precision in double division
+            final int bits = (int) (Math.ceil(Math.log(value + 1) / LOG2));
+            return (int) Math.ceil(bits / 8D);
         }
         else if (value <= MAX_UNSIGNED_56BIT_INT_VALUE)
         {
             return 7;
         }
-        else if (value <= MAX_UNSIGNED_64BIT_INT_VALUE)
-        {
-            return 8;
-        }
-        throw new IllegalArgumentException("Number is too large for an unsigned integer: " + value);
+        return 8;
     }
 
     private static void assertValueFits(long value, int bytes, long maxValue)

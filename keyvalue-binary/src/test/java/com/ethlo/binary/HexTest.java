@@ -26,8 +26,8 @@ import org.junit.Test;
 
 public class HexTest
 {
-    final byte[] binary = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-    final String hex = "000102030405060708090a0b0c0d0e0f10111213";
+    final byte[] binary = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, -1, -2};
+    final String hex = "000102030405060708090a0b0c0d0e0f10111213fffe";
 
     @Test
     public void testEncode()
@@ -41,5 +41,17 @@ public class HexTest
     {
         final byte[] data = Hex.decode(hex);
         assertThat(data).isEqualTo(binary);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDecodeOddNumberOfCharacters()
+    {
+        Hex.decode(hex + "1");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDecodeNonHexCharacter()
+    {
+        Hex.decode(hex + "q");
     }
 }

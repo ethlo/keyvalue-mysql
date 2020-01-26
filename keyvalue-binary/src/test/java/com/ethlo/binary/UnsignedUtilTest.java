@@ -9,9 +9,9 @@ package com.ethlo.binary;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,6 +66,27 @@ public class UnsignedUtilTest
         assertThat(result).isEqualTo(UnsignedUtil.MAX_UNSIGNED_32BIT_INT_VALUE);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void decodeUnsignedZeroLength()
+    {
+        final byte[] data = new byte[]{-1};
+        UnsignedUtil.decodeUnsigned(data, 0, 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void decodeUnsignedMoreThan64BitLength()
+    {
+        final byte[] data = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        UnsignedUtil.decodeUnsigned(data, 0, 9);
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void decodeUnsignedOutOfArrayBounds()
+    {
+        final byte[] data = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        UnsignedUtil.decodeUnsigned(data, 5, 6);
+    }
+
     @Test
     public void decodeUnsignedShort()
     {
@@ -84,6 +105,18 @@ public class UnsignedUtilTest
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void getMaxSizeZeroBytes()
+    {
+        UnsignedUtil.getMaxSize(0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void getMaxSizeMoreThan8Bytes()
+    {
+        UnsignedUtil.getMaxSize(9);
+    }
+
     @Test
     public void getMaxSize()
     {
@@ -94,8 +127,7 @@ public class UnsignedUtilTest
         assertThat(UnsignedUtil.getMaxSize(5)).isEqualTo(UnsignedUtil.MAX_UNSIGNED_40BIT_INT_VALUE);
         assertThat(UnsignedUtil.getMaxSize(6)).isEqualTo(UnsignedUtil.MAX_UNSIGNED_48BIT_INT_VALUE);
         assertThat(UnsignedUtil.getMaxSize(7)).isEqualTo(UnsignedUtil.MAX_UNSIGNED_56BIT_INT_VALUE);
-        assertThat(UnsignedUtil.getMaxSize(8)).isEqualTo(UnsignedUtil.MAX_UNSIGNED_64BIT_INT_VALUE);
-
+        assertThat(UnsignedUtil.getMaxSize(8)).isEqualTo(UnsignedUtil.MAX_UNSIGNED_63BIT_INT_VALUE);
     }
 
     @Test
@@ -105,6 +137,13 @@ public class UnsignedUtilTest
         final byte[] data = UnsignedUtil.encodeUnsignedByte(value);
         assertThat(data.length).isEqualTo(1);
         assertThat(UnsignedUtil.decodeUnsignedByte(data, 0)).isEqualTo(value);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void encodeTooLargeValueForBits()
+    {
+        final int value = 70_000;
+        UnsignedUtil.encodeUnsignedShort(value);
     }
 
     @Test
@@ -117,7 +156,7 @@ public class UnsignedUtilTest
     }
 
     @Test
-    public void encodeUnsignedInt()
+    public void encodeUnsignedIntWithReuiredNumberOfBytes()
     {
         final long value = 998281928292021093L;
         final int bytesRequired = UnsignedUtil.getRequiredBytesForUnsigned(value);
@@ -148,8 +187,33 @@ public class UnsignedUtilTest
     @Test
     public void getRequiredBytesForUnsigned()
     {
-        final long value = 998281928292021093L;
-        final int bytesRequired = UnsignedUtil.getRequiredBytesForUnsigned(value);
-        assertThat(bytesRequired).isEqualTo(8);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_8BIT_INT_VALUE, 1);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_16BIT_INT_VALUE, 2);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_24BIT_INT_VALUE, 3);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_32BIT_INT_VALUE, 4);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_40BIT_INT_VALUE, 5);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_48BIT_INT_VALUE, 6);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_56BIT_INT_VALUE, 7);
+        checkAtBoundary(UnsignedUtil.MAX_UNSIGNED_63BIT_INT_VALUE, 8);
+    }
+
+    private void checkAtBoundary(final long value, final int byteCountAssert)
+    {
+        assertThat(UnsignedUtil.getRequiredBytesForUnsigned(value)).isEqualTo(byteCountAssert);
+        assertThat(UnsignedUtil.getRequiredBytesForUnsigned(value - 1)).isEqualTo(byteCountAssert);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void getRequiredBytesForUnsignedNegative()
+    {
+        final long value = -1;
+        UnsignedUtil.getRequiredBytesForUnsigned(value);
+    }
+
+    @Test
+    public void encodeUnsignedInt()
+    {
+        final byte[] data = UnsignedUtil.encodeUnsignedInt(UnsignedUtil.MAX_UNSIGNED_32BIT_INT_VALUE);
+        assertThat(data).isEqualTo(new byte[]{-1, -1, -1, -1});
     }
 }

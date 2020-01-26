@@ -38,6 +38,10 @@ public class Hex
 
     public static byte[] decode(String hex)
     {
+        if (hex.length() % 2 != 0)
+        {
+            throw new IllegalArgumentException("Requires even number of characters, got " + hex.length());
+        }
         final char[] chars = hex.toCharArray();
         final byte[] result = new byte[chars.length / 2];
         int index = 0;
@@ -57,11 +61,6 @@ public class Hex
 
     private static int toDigit(char hexChar)
     {
-        int digit = Character.digit(hexChar, 16);
-        if (digit == -1)
-        {
-            throw new IllegalArgumentException("Invalid hex character: " + hexChar);
-        }
-        return digit;
+        return Character.digit(hexChar, 16);
     }
 }
