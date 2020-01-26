@@ -22,7 +22,7 @@ package com.ethlo.binary;
 
 public class UnsignedUtil
 {
-    public static final long MAX_UNSIGNED_63BIT_INT_VALUE = 9_223_372_036_854_775_806L;
+    public static final long MAX_UNSIGNED_63BIT_INT_VALUE = 9_223_372_036_854_775_807L;
     public static final long MAX_UNSIGNED_56BIT_INT_VALUE = 0xffffffffffffffL;
     public static final long MAX_UNSIGNED_48BIT_INT_VALUE = 0xffffffffffffL;
     public static final long MAX_UNSIGNED_40BIT_INT_VALUE = 0xffffffffffL;
