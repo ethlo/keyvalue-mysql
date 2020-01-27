@@ -25,8 +25,9 @@ public class ByteArrayUtil
 {
     /**
      * Set the byte in the source in the target
-     * @param source The source data
-     * @param target The target data
+     *
+     * @param source       The source data
+     * @param target       The target data
      * @param targetOffset The offset in the target where to overwrite the bytes
      */
     public static void set(final byte[] source, final byte[] target, int targetOffset)

@@ -30,8 +30,12 @@ public class UnsignedUtil
     public static final long MAX_UNSIGNED_24BIT_INT_VALUE = 16_777_215L;
     public static final long MAX_UNSIGNED_16BIT_INT_VALUE = 65_535L;
     public static final long MAX_UNSIGNED_8BIT_INT_VALUE = 255L;
+
     public static final int BITS_IN_BYTE = 8;
+
     public static final int BYTES_IN_LONG = 8;
+    public static final int BYTES_IN_INT = 4;
+    public static final int BYTES_IN_SHORT = 2;
 
     private static final long[] bytesToMaxValue = new long[]
             {

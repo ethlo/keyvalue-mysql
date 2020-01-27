@@ -16,4 +16,4 @@ cache:
 script: mvn clean package -DtrimStackTrace=false -DuseFile=false
 
 after_success:
-  - mvn clean test jacoco:report coveralls:report
+  - mvn clean test jacoco:report-aggregate coveralls:report
