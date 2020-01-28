@@ -57,4 +57,15 @@ public class KeyValueProxy
             }
         }
     }
+
+    public static Object unwrap(Object proxy)
+    {
+        if (Proxy.isProxyClass(proxy.getClass()))
+        {
+            final InvocationHandler invocationHandler = Proxy.getInvocationHandler(proxy);
+            return ((PassthroughHandler) invocationHandler).target;
+        }
+        return proxy;
+    }
+
 }
