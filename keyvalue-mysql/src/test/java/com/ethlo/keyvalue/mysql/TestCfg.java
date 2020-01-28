@@ -1,8 +1,8 @@
-package com.ethlo.keyvalue;
+package com.ethlo.keyvalue.mysql;
 
 /*-
  * #%L
- * Key/Value API
+ * Key/value MySQL implementation
  * %%
  * Copyright (C) 2013 - 2020 Morten Haraldsen (ethlo)
  * %%
@@ -20,28 +20,12 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
-import java.io.Closeable;
-import java.util.Iterator;
-import java.util.Map.Entry;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
 
-/**
- * @author mha
- */
-public interface SeekableIterator<K, V> extends Closeable, Iterator<Entry<K,V>>
+@EnableAutoConfiguration
+@Configuration
+public class TestCfg
 {
-    boolean seekToFirst();
 
-    boolean hasNext();
-
-    Entry<K, V> next();
-
-    boolean hasPrevious();
-
-    Entry<K, V> previous();
-
-    boolean seekTo(K key);
-
-    void close();
-
-    boolean seekToLast();
 }

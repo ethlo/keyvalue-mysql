@@ -35,6 +35,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
 
+import javax.annotation.Nonnull;
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
@@ -50,14 +51,9 @@ import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.Assert;
 
-import com.ethlo.keyvalue.BatchKeyValueDb;
 import com.ethlo.keyvalue.BatchWriteWrapper;
-import com.ethlo.keyvalue.IterableKeyValueDb;
-import com.ethlo.keyvalue.MutatingKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
-import com.ethlo.keyvalue.cas.BatchCasKeyValueDb;
 import com.ethlo.keyvalue.cas.CasHolder;
-import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.compression.DataCompressor;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
@@ -68,12 +64,7 @@ import com.google.common.collect.AbstractIterator;
  *
  * @author Morten Haraldsen
  */
-public class MysqlClientImpl implements
-        MutatingKeyValueDb<ByteArrayKey, byte[]>,
-        IterableKeyValueDb<ByteArrayKey, byte[]>,
-        BatchKeyValueDb<ByteArrayKey, byte[]>,
-        BatchCasKeyValueDb<ByteArrayKey, byte[], Long>,
-        CasKeyValueDb<ByteArrayKey, byte[], Long>
+public class MysqlClientImpl implements MysqlClient
 {
     private static final Logger logger = LoggerFactory.getLogger(MysqlClientImpl.class);
 
@@ -90,15 +81,24 @@ public class MysqlClientImpl implements
     private final String updateCasSql;
     private final String deleteSql;
     private final String clearSql;
-    private final String insertSimpleSql;
+    private final String insertOnDuplicateUpdateSql;
+    private final String replaceInto;
 
     private final RowMapper<byte[]> rowMapper;
     private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 
+    private final boolean useReplaceInto;
+
     public MysqlClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
+    {
+        this(tableName, dataSource, keyEncoder, dataCompressor, false);
+    }
+
+    public MysqlClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor, boolean useReplaceInto)
     {
         this.keyEncoder = keyEncoder;
         this.dataCompressor = dataCompressor;
+        this.useReplaceInto = useReplaceInto;
 
         Assert.hasLength(tableName, "tableName cannot be null");
         Assert.notNull(dataSource, "dataSource cannot be null");
@@ -110,7 +110,8 @@ public class MysqlClientImpl implements
         this.getCasSqlPrefix = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey LIKE ?";
         this.insertCasSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
         this.updateCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
-        this.insertSimpleSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?) ON DUPLICATE KEY UPDATE mvalue=?, cas_column=cas_column+1";
+        this.insertOnDuplicateUpdateSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?) ON DUPLICATE KEY UPDATE mvalue=?, cas_column=cas_column+1";
+        this.replaceInto = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
         this.deleteSql = "DELETE FROM " + tableName + " WHERE mkey = ?";
         this.clearSql = "DELETE FROM " + tableName;
 
@@ -157,18 +158,53 @@ public class MysqlClientImpl implements
     @Override
     public void putAll(final Map<ByteArrayKey, byte[]> values)
     {
-        final List<ByteArrayKey> keys = new ArrayList<>(values.keySet());
-        int[] updateCounts = tpl.batchUpdate(insertSimpleSql, new BatchPreparedStatementSetter()
+        if (!useReplaceInto)
         {
-            public void setValues(PreparedStatement ps, int i) throws SQLException
+            insertOnDuplicateKeyUpdate(values);
+        }
+        else
+        {
+            replaceInto(values);
+        }
+    }
+
+    private void insertOnDuplicateKeyUpdate(final Map<ByteArrayKey, byte[]> values)
+    {
+        final List<ByteArrayKey> keys = new ArrayList<>(values.keySet());
+        int[] updateCounts = tpl.batchUpdate(insertOnDuplicateUpdateSql, new BatchPreparedStatementSetter()
+        {
+            public void setValues(@Nonnull PreparedStatement ps, int i) throws SQLException
             {
                 final ByteArrayKey key = keys.get(i);
                 final byte[] value = values.get(key);
                 final byte[] compressedValue = dataCompressor.compress(value);
                 ps.setString(1, keyEncoder.toString(key.getByteArray()));
                 ps.setBytes(2, compressedValue);
-                ps.setLong(3,0L);
+                ps.setLong(3, 0L);
                 ps.setBytes(4, compressedValue);
+            }
+
+            public int getBatchSize()
+            {
+                return values.size();
+            }
+        });
+
+        logger.debug("Updated {} entries", updateCounts.length);
+    }
+
+    private void replaceInto(final Map<ByteArrayKey, byte[]> values)
+    {
+        final List<ByteArrayKey> keys = new ArrayList<>(values.keySet());
+        int[] updateCounts = tpl.batchUpdate(replaceInto, new BatchPreparedStatementSetter()
+        {
+            public void setValues(@Nonnull PreparedStatement ps, int i) throws SQLException
+            {
+                final ByteArrayKey key = keys.get(i);
+                final byte[] value = values.get(key);
+                final byte[] compressedValue = dataCompressor.compress(value);
+                ps.setString(1, keyEncoder.toString(key.getByteArray()));
+                ps.setBytes(2, compressedValue);
             }
 
             public int getBatchSize()

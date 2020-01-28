@@ -26,28 +26,44 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ethlo.keyvalue.compression.DataCompressor;
-import com.ethlo.keyvalue.keys.Key;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 
 /**
  * @author mha
  */
-public abstract class KeyValueDbManager<K extends Key<K>, V, T extends KeyValueDb<K, V>> implements Closeable
+public abstract class KeyValueDbManager<T extends BaseKeyValueDb> implements Closeable
 {
-    private final Map<String, T> dbs = new HashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(KeyValueDbManager.class);
 
-    protected abstract T createMainDb(String dbName, boolean create, KeyEncoder keyEncoder, DataCompressor dataCompressor);
+    private final Map<String, T> dbs = new HashMap<>();
+    protected final Class<T> type;
+
+    protected KeyValueDbManager(final Class<T> type)
+    {
+        this.type = type;
+    }
+
+    protected abstract Object doCreateDb(String dbName, boolean create, KeyEncoder keyEncoder, DataCompressor dataCompressor);
 
     public T getDb(String dbName, boolean create, KeyEncoder keyEncoder, DataCompressor dataCompressor)
     {
         T db = this.getOpenDb(dbName);
         if (db == null)
         {
-            db = createMainDb(dbName, create, keyEncoder, dataCompressor);
+            final Object rawDb = doCreateDb(dbName, create, keyEncoder, dataCompressor);
+            db = createDb(rawDb, type);
             this.dbs.put(dbName, db);
         }
         return db;
+    }
+
+    private T createDb(final Object db, final Class<T> type)
+    {
+        return KeyValueProxy.proxy(db, type);
     }
 
     private T getOpenDb(String name)
@@ -60,7 +76,19 @@ public abstract class KeyValueDbManager<K extends Key<K>, V, T extends KeyValueD
         final T db = this.getOpenDb(name);
         if (db != null)
         {
+            doClose(db);
+        }
+    }
+
+    private void doClose(final T db)
+    {
+        try
+        {
             db.close();
+        }
+        catch (Exception e)
+        {
+            logger.error("Cannot close " + db, e);
         }
     }
 
@@ -69,7 +97,7 @@ public abstract class KeyValueDbManager<K extends Key<K>, V, T extends KeyValueD
     {
         for (T db : this.dbs.values())
         {
-            db.close();
+            doClose(db);
         }
     }
 

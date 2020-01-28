@@ -20,6 +20,7 @@ package com.ethlo.keyvalue;
  * #L%
  */
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.ethlo.keyvalue.compression.NopDataCompressor;
-import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 
 /**
@@ -35,15 +35,22 @@ import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = TestCfg.class)
-public abstract class AbstractKeyValueDbTest
+public abstract class AbstractKeyValueDbTest<T extends TestKvDb>
 {
-    protected KeyValueDb<ByteArrayKey, byte[]> db;
+    protected TestKvDb db;
+
     @Autowired
-    private KeyValueDbManager kvDbManager;
+    private KeyValueDbManager<TestKvDb> kvDbManager;
 
     @Before
     public void fetchDb()
     {
         this.db = this.kvDbManager.getDb("test", true, new HexKeyEncoder(), new NopDataCompressor());
+    }
+
+    @After
+    public void after()
+    {
+        this.db.close();
     }
 }

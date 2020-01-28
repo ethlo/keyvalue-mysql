@@ -35,7 +35,7 @@ import com.ethlo.keyvalue.keys.Key;
  * @see CasKeyValueDb
  * @see BatchCasKeyValueDb
  */
-public interface KeyValueDb<K extends Key<K>, V> extends AutoCloseable
+public interface KeyValueDb<K extends Key<K>, V> extends BaseKeyValueDb
 {
     V get(K key);
 
@@ -59,6 +59,4 @@ public interface KeyValueDb<K extends Key<K>, V> extends AutoCloseable
     }
 
     void clear();
-
-    void close();
 }

@@ -29,8 +29,8 @@ import com.ethlo.keyvalue.hashmap.HashmapKeyValueDbManager;
 public class TestCfg
 {
     @Bean
-    public KeyValueDbManager keyValueDbManager()
+    public KeyValueDbManager<TestKvDb> keyValueDbManager()
     {
-        return new HashmapKeyValueDbManager();
+        return new HashmapKeyValueDbManager<>(TestKvDb.class);
     }
 }

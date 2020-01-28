@@ -28,7 +28,7 @@ import com.ethlo.keyvalue.keys.ByteArrayKey;
 /**
  * @author Morten Haraldsen
  */
-public class KeyValueDbTest extends AbstractKeyValueDbTest
+public class KeyValueDbTest extends AbstractKeyValueDbTest<TestKvDb>
 {
     @Test
     public void testPut()

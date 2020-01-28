@@ -31,7 +31,7 @@ import com.ethlo.keyvalue.keys.Key;
  * @param <V> Value type
  * @author Morten Haraldsen
  */
-public interface MutatingKeyValueDb<K extends Key<K>, V> extends KeyValueDb<K, V>
+public interface MutableKeyValueDb<K extends Key<K>, V> extends KeyValueDb<K, V>
 {
     /**
      * Value mutator method that should handle atomic updates using optimistic/pessimistic locking

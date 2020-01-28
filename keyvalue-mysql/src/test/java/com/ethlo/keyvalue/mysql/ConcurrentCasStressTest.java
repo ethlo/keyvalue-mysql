@@ -1,4 +1,4 @@
-package com.ethlo.mycached;
+package com.ethlo.keyvalue.mysql;
 
 /*-
  * #%L
@@ -59,7 +59,7 @@ public class ConcurrentCasStressTest extends AbstractTest
                     {
                         try
                         {
-                            mutatingKeyValueDb.mutate(key, (Function<byte[], byte[]>) input ->
+                            db.mutate(key, (Function<byte[], byte[]>) input ->
                             {
                                 final int curCount = input != null ? Ints.fromByteArray(input) : 0;
 
@@ -93,7 +93,7 @@ public class ConcurrentCasStressTest extends AbstractTest
         for (int i = 0; i < iterations; i++)
         {
             final ByteArrayKey key = new ByteArrayKey(Ints.toByteArray(i));
-            final int count = Ints.fromByteArray(mutatingKeyValueDb.get(key));
+            final int count = Ints.fromByteArray(db.get(key));
             assertThat(count).isEqualTo(threadCount);
         }
         System.out.println("Failed attempts " + failed.get());
@@ -117,7 +117,7 @@ public class ConcurrentCasStressTest extends AbstractTest
                     {
                         try
                         {
-                            mutatingKeyValueDb.mutate(key, (Function<byte[], byte[]>) input ->
+                            db.mutate(key, (Function<byte[], byte[]>) input ->
                             {
                                 final int curCount = input != null ? Ints.fromByteArray(input) : 0;
 
@@ -147,8 +147,14 @@ public class ConcurrentCasStressTest extends AbstractTest
             res.get();
         }
 
-        final int count = Ints.fromByteArray(mutatingKeyValueDb.get(key));
+        final int count = Ints.fromByteArray(db.get(key));
         System.out.println(count + " (failed attempts " + failed.get() + ")");
         assertThat(count).isEqualTo(threadCount * iterations);
     }
-}	
+
+    @Override
+    protected boolean useReplaceInto()
+    {
+        return false;
+    }
+}

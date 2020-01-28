@@ -24,28 +24,35 @@ import javax.sql.DataSource;
 
 import org.springframework.dao.DataAccessResourceFailureException;
 
+import com.ethlo.keyvalue.BaseKeyValueDb;
 import com.ethlo.keyvalue.KeyValueDbManager;
-import com.ethlo.keyvalue.cas.BatchCasKeyValueDb;
 import com.ethlo.keyvalue.compression.DataCompressor;
-import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 
 /**
  * @author Morten Haraldsen
  */
-public class MysqlClientManagerImpl extends KeyValueDbManager<ByteArrayKey, byte[], BatchCasKeyValueDb<ByteArrayKey, byte[], Long>>
+public class MysqlClientManagerImpl<T extends BaseKeyValueDb> extends KeyValueDbManager<T>
 {
     private final MysqlUtil mysqlUtil;
     private final DataSource dataSource;
+    private final boolean useReplaceInto;
 
-    public MysqlClientManagerImpl(DataSource dataSource)
+    public MysqlClientManagerImpl(Class<T> type, DataSource dataSource)
     {
+        this(type, dataSource, false);
+    }
+
+    public MysqlClientManagerImpl(Class<T> type, DataSource dataSource, boolean useReplaceInto)
+    {
+        super(type);
         this.dataSource = dataSource;
         this.mysqlUtil = new MysqlUtil(null, dataSource);
+        this.useReplaceInto = useReplaceInto;
     }
 
     @Override
-    public BatchCasKeyValueDb<ByteArrayKey, byte[], Long> createMainDb(String tableName, boolean allowCreate, KeyEncoder keyEncoder, DataCompressor dataCompressor)
+    public Object doCreateDb(String tableName, boolean allowCreate, KeyEncoder keyEncoder, DataCompressor dataCompressor)
     {
         if (!allowCreate && !this.mysqlUtil.tableExists(tableName))
         {
@@ -55,6 +62,6 @@ public class MysqlClientManagerImpl extends KeyValueDbManager<ByteArrayKey, byte
         {
             this.mysqlUtil.createTable(tableName);
         }
-        return new MysqlClientImpl(tableName, dataSource, keyEncoder, dataCompressor);
+        return new MysqlClientImpl(tableName, dataSource, keyEncoder, dataCompressor, useReplaceInto);
     }
 }

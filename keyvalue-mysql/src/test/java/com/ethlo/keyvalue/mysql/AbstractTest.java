@@ -1,4 +1,4 @@
-package com.ethlo.mycached;
+package com.ethlo.keyvalue.mysql;
 
 /*-
  * #%L
@@ -20,43 +20,37 @@ package com.ethlo.mycached;
  * #L%
  */
 
+import javax.sql.DataSource;
+
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.ethlo.keyvalue.MutatingKeyValueDb;
-import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.compression.DataCompressor;
 import com.ethlo.keyvalue.compression.NopDataCompressor;
-import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
-import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
-import com.ethlo.keyvalue.mysql.MysqlUtil;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = TestCfg.class, properties = "spring.datasource.type=com.zaxxer.hikari.HikariDataSource")
-//@Transactional
+@SpringBootTest(classes = TestCfg.class)
 public abstract class AbstractTest
 {
+    @Autowired
+    private DataSource dataSource;
+
     protected final KeyEncoder keyEncoder = new HexKeyEncoder();
     protected final DataCompressor dataCompressor = new NopDataCompressor();
+    protected MysqlClient db;
 
-    protected MutatingKeyValueDb<ByteArrayKey, byte[]> mutatingKeyValueDb;
-    protected CasKeyValueDb<ByteArrayKey, byte[], Long> casKeyValueDb;
+    protected abstract boolean useReplaceInto();
 
-    @Autowired
-    private MysqlClientManagerImpl clientManager;
-
-    @SuppressWarnings("unchecked")
     @Before
     public void setup()
     {
-        final String dbName = "_kvtest";
-        this.mutatingKeyValueDb = (MutatingKeyValueDb<ByteArrayKey, byte[]>) clientManager.createMainDb(dbName, true, keyEncoder, dataCompressor);
-        this.casKeyValueDb = (CasKeyValueDb<ByteArrayKey, byte[], Long>) mutatingKeyValueDb;
-        this.casKeyValueDb.clear();
+        final MysqlClientManagerImpl<MysqlClient> clientManager = new MysqlClientManagerImpl<>(MysqlClient.class, dataSource, useReplaceInto());
+        this.db = clientManager.getDb("_kvtest", true, keyEncoder, dataCompressor);
+        this.db.clear();
     }
 }

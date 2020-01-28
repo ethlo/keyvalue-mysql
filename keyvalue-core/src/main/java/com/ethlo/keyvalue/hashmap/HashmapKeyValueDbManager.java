@@ -20,19 +20,20 @@ package com.ethlo.keyvalue.hashmap;
  * #L%
  */
 
+import com.ethlo.keyvalue.BaseKeyValueDb;
 import com.ethlo.keyvalue.KeyValueDbManager;
-import com.ethlo.keyvalue.cas.CasKeyValueDb;
 import com.ethlo.keyvalue.compression.DataCompressor;
-import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 
-/**
- * @author mha
- */
-public class HashmapKeyValueDbManager extends KeyValueDbManager<ByteArrayKey, byte[], CasKeyValueDb<ByteArrayKey, byte[], Long>>
+public class HashmapKeyValueDbManager<T extends BaseKeyValueDb> extends KeyValueDbManager<T>
 {
+    public HashmapKeyValueDbManager(final Class<T> type)
+    {
+        super(type);
+    }
+
     @Override
-    protected CasKeyValueDb<ByteArrayKey, byte[], Long> createMainDb(String dbName, boolean create, KeyEncoder keyEncoder, DataCompressor dataCompressor)
+    protected Object doCreateDb(final String dbName, final boolean create, final KeyEncoder keyEncoder, final DataCompressor dataCompressor)
     {
         return new HashmapKeyValueDb();
     }

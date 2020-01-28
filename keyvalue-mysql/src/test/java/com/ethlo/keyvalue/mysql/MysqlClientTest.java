@@ -1,4 +1,4 @@
-package com.ethlo.mycached;
+package com.ethlo.keyvalue.mysql;
 
 /*-
  * #%L
@@ -28,16 +28,15 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.junit.Assert;
 import org.junit.Test;
 
-import com.ethlo.keyvalue.IterableKeyValueDb;
 import com.ethlo.keyvalue.SeekableIterator;
 import com.ethlo.keyvalue.cas.CasHolder;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
 
-public class SmokeTest extends AbstractTest
+public abstract class MysqlClientTest extends AbstractTest
 {
     final ByteArrayKey keyBytes0 = new ByteArrayKey(new byte[]{0, 0});
     final ByteArrayKey keyBytes1 = new ByteArrayKey(new byte[]{1, 0});
@@ -49,14 +48,14 @@ public class SmokeTest extends AbstractTest
     public void testGetAll()
     {
         final Map<ByteArrayKey, byte[]> data = createFiveEntries();
-        mutatingKeyValueDb.putAll(data);
+        db.putAll(data);
 
         final Set<ByteArrayKey> keys = new TreeSet<>();
         keys.add(keyBytes0);
         keys.add(keyBytes1);
         keys.add(keyBytes2);
 
-        final Map<ByteArrayKey, byte[]> result = mutatingKeyValueDb.getAll(keys);
+        final Map<ByteArrayKey, byte[]> result = db.getAll(keys);
         assertThat(result).hasSize(3);
         assertThat(result.keySet()).containsExactlyInAnyOrder(keyBytes0, keyBytes1, keyBytes2);
     }
@@ -66,9 +65,9 @@ public class SmokeTest extends AbstractTest
     {
         final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 7});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
-        mutatingKeyValueDb.put(keyBytes, valueBytes);
-        final byte[] retVal = mutatingKeyValueDb.get(keyBytes);
-        Assert.assertArrayEquals(valueBytes, retVal);
+        db.put(keyBytes, valueBytes);
+        final byte[] retVal = db.get(keyBytes);
+        assertThat(retVal).isEqualTo(valueBytes);
     }
 
     @Test
@@ -76,38 +75,35 @@ public class SmokeTest extends AbstractTest
     {
         final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{4, 5, 6, 7, 9, 9});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsmakeItABitLonger".getBytes(StandardCharsets.UTF_8);
-        mutatingKeyValueDb.put(keyBytes, valueBytes);
+        db.put(keyBytes, valueBytes);
 
-        final CasHolder<ByteArrayKey, byte[], Long> res = casKeyValueDb.getCas(keyBytes);
-        Assert.assertEquals(keyBytes, res.getKey());
-        Assert.assertEquals(Long.valueOf(0L), res.getCasValue());
-        Assert.assertArrayEquals(valueBytes, res.getValue());
+        final CasHolder<ByteArrayKey, byte[], Long> res = db.getCas(keyBytes);
+        assertThat(res.getKey()).isEqualTo(keyBytes);
+        assertThat(res.getCasValue()).isEqualTo(0);
+        assertThat(res.getValue()).isEqualTo(valueBytes);
 
         final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsMakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
         res.setValue(valueBytesUpdated);
-        casKeyValueDb.putCas(res);
+        db.putCas(res);
+        final CasHolder<ByteArrayKey, byte[], Long> cas = db.getCas(res.getKey());
+        assertThat(cas.getValue()).isEqualTo(valueBytesUpdated);
+        assertThat(cas.getCasValue()).isEqualTo(1);
     }
 
     @Test
     public void testIterate()
     {
         final Map<ByteArrayKey, byte[]> data = createFiveEntries();
-        mutatingKeyValueDb.putAll(data);
+        db.putAll(data);
 
-        final IterableKeyValueDb<ByteArrayKey, byte[]> idb = (IterableKeyValueDb<ByteArrayKey, byte[]>) mutatingKeyValueDb;
-        int count = 0;
-        try (final SeekableIterator<ByteArrayKey, byte[]> iter = idb.iterator())
+        int count;
+        try (final SeekableIterator<ByteArrayKey, byte[]> iter = db.iterator())
         {
             final ByteArrayKey prefixKey = new ByteArrayKey(new byte[]{1});
             assertThat(iter.seekTo(prefixKey)).isTrue();
-            //iter.seekToFirst();
-            while (iter.hasNext())
-            {
-                System.out.println(iter.next());
-                count++;
-            }
+            count = Iterators.size(iter);
         }
-        Assert.assertEquals(3, count);
+        assertThat(count).isEqualTo(3);
     }
 
     private Map<ByteArrayKey, byte[]> createFiveEntries()
@@ -129,12 +125,12 @@ public class SmokeTest extends AbstractTest
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
         final byte[] valueBytesUpdated = "ThisIsTheDataToStoreSoLetsMakeItABitLongerAndEvenUpdated".getBytes(StandardCharsets.UTF_8);
 
-        mutatingKeyValueDb.put(key, valueBytes);
+        db.put(key, valueBytes);
 
-        mutatingKeyValueDb.mutate(key, (Function<byte[], byte[]>) input -> valueBytesUpdated);
+        db.mutate(key, (Function<byte[], byte[]>) input -> valueBytesUpdated);
 
-        final CasHolder<ByteArrayKey, byte[], Long> res = casKeyValueDb.getCas(key);
-        Assert.assertEquals(Long.valueOf(1L), res.getCasValue());
-        Assert.assertArrayEquals(valueBytesUpdated, res.getValue());
+        final CasHolder<ByteArrayKey, byte[], Long> res = db.getCas(key);
+        assertThat(res.getCasValue()).isEqualTo(1);
+        assertThat(valueBytesUpdated).isEqualTo(res.getValue());
     }
 }

@@ -39,7 +39,7 @@ import com.hazelcast.core.IMap;
  *
  * @author Morten Haraldsen
  */
-public class MutableHazelcastCachedKeyValueDb<K extends Key<K>, V, C extends Comparable<C>> implements MutatingKeyValueDb<K, V>, BatchCasKeyValueDb<K, V, C>
+public class MutableHazelcastCachedKeyValueDb<K extends Key<K>, V, C extends Comparable<C>> implements MutableKeyValueDb<K, V>, BatchCasKeyValueDb<K, V, C>
 {
     private final BatchCasKeyValueDb<K, V, C> delegate;
     private final IMap<K, CasHolder<K, V, C>> cacheMap;
