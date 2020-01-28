@@ -34,6 +34,7 @@ import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.ethlo.keyvalue.keys.encoders.HexKeyEncoder;
 import com.ethlo.keyvalue.keys.encoders.KeyEncoder;
 import com.ethlo.keyvalue.mysql.MysqlClientManagerImpl;
+import com.ethlo.keyvalue.mysql.MysqlUtil;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestCfg.class, properties = "spring.datasource.type=com.zaxxer.hikari.HikariDataSource")
@@ -56,5 +57,6 @@ public abstract class AbstractTest
         final String dbName = "_kvtest";
         this.mutatingKeyValueDb = (MutatingKeyValueDb<ByteArrayKey, byte[]>) clientManager.createMainDb(dbName, true, keyEncoder, dataCompressor);
         this.casKeyValueDb = (CasKeyValueDb<ByteArrayKey, byte[], Long>) mutatingKeyValueDb;
+        this.casKeyValueDb.clear();
     }
 }

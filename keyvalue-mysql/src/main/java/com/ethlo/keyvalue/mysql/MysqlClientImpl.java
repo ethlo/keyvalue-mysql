@@ -86,11 +86,12 @@ public class MysqlClientImpl implements
     private final String getCasSql;
     private final String getCasSqlPrefix;
     private final String getCasSqlFirst;
-    private final String insertSql;
-    private final String replaceSql;
-    private final String replaceCasSql;
+    private final String insertCasSql;
+    private final String updateCasSql;
     private final String deleteSql;
     private final String clearSql;
+    private final String insertSimpleSql;
+
     private final RowMapper<byte[]> rowMapper;
     private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 
@@ -107,9 +108,9 @@ public class MysqlClientImpl implements
         this.getCasSql = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey = ?";
         this.getCasSqlFirst = "SELECT mkey, mvalue, cas_column FROM " + tableName + " ORDER BY mkey";
         this.getCasSqlPrefix = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey LIKE ?";
-        this.replaceSql = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
-        this.insertSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
-        this.replaceCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
+        this.insertCasSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
+        this.updateCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
+        this.insertSimpleSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?) ON DUPLICATE KEY UPDATE mvalue=?, cas_column=cas_column+1";
         this.deleteSql = "DELETE FROM " + tableName + " WHERE mkey = ?";
         this.clearSql = "DELETE FROM " + tableName;
 
@@ -157,14 +158,17 @@ public class MysqlClientImpl implements
     public void putAll(final Map<ByteArrayKey, byte[]> values)
     {
         final List<ByteArrayKey> keys = new ArrayList<>(values.keySet());
-        int[] updateCounts = tpl.batchUpdate(replaceSql, new BatchPreparedStatementSetter()
+        int[] updateCounts = tpl.batchUpdate(insertSimpleSql, new BatchPreparedStatementSetter()
         {
             public void setValues(PreparedStatement ps, int i) throws SQLException
             {
                 final ByteArrayKey key = keys.get(i);
                 final byte[] value = values.get(key);
+                final byte[] compressedValue = dataCompressor.compress(value);
                 ps.setString(1, keyEncoder.toString(key.getByteArray()));
-                ps.setBytes(2, dataCompressor.compress(value));
+                ps.setBytes(2, compressedValue);
+                ps.setLong(3,0L);
+                ps.setBytes(4, compressedValue);
             }
 
             public int getBatchSize()
@@ -217,7 +221,7 @@ public class MysqlClientImpl implements
     private void insertNewDueToNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
     {
         final PreparedStatementCreator creator = connection -> {
-            final PreparedStatement ps = connection.prepareStatement(insertSql);
+            final PreparedStatement ps = connection.prepareStatement(insertCasSql);
             final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
             ps.setString(1, strKey);
             ps.setBytes(2, dataCompressor.compress(cas.getValue()));
@@ -241,7 +245,7 @@ public class MysqlClientImpl implements
         {
             final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
             final long casValue = cas.getCasValue();
-            final PreparedStatement ps = con.prepareStatement(replaceCasSql);
+            final PreparedStatement ps = con.prepareStatement(updateCasSql);
             ps.setBytes(1, dataCompressor.compress(cas.getValue()));
             ps.setString(2, strKey);
             ps.setLong(3, casValue);
