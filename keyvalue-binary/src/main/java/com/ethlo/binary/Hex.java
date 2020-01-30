@@ -43,7 +43,7 @@ public class Hex
         return new String(hexDigits);
     }
 
-    public static String encodeLowercase(byte[] input)
+    public static String encodeLowerCase(byte[] input)
     {
         return encode(input, false);
     }

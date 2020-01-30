@@ -33,7 +33,7 @@ public class HexTest
     @Test
     public void testEncodeLowerCase()
     {
-        final String hex = Hex.encodeLowercase(binary);
+        final String hex = Hex.encodeLowerCase(binary);
         assertThat(hex).isEqualTo(hexLower);
     }
 
@@ -45,14 +45,14 @@ public class HexTest
     }
 
     @Test
-    public void testDecodeLowercase()
+    public void testDecodeLowerCase()
     {
         final byte[] data = Hex.decode(hexLower);
         assertThat(data).isEqualTo(binary);
     }
 
     @Test
-    public void testDecodeUppercase()
+    public void testDecodeUpperCase()
     {
         final byte[] data = Hex.decode(hexUpper);
         assertThat(data).isEqualTo(binary);
