@@ -71,7 +71,7 @@ public class ByteArrayKey extends Key<ByteArrayKey>
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " [" + Hex.encode(keyData) + "]";
+        return getClass().getSimpleName() + " [" + Hex.encodeUpperCase(keyData) + "]";
     }
 
     @Override

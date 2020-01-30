@@ -9,9 +9,9 @@ package com.ethlo.binary;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,18 +22,35 @@ package com.ethlo.binary;
 
 public class Hex
 {
-    private Hex(){}
+    private static final char[] UPPERCASE_CHARACTERS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    private static final char[] LOWERCASE_CHARACTERS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-    public static String encode(byte[] input)
+    private Hex()
+    {
+    }
+
+    private static String encode(byte[] input, boolean uppercase)
     {
         final char[] hexDigits = new char[input.length * 2];
         int index = 0;
         for (byte num : input)
         {
-            hexDigits[index++] = Character.forDigit((num >> 4) & 0xF, 16);
-            hexDigits[index++] = Character.forDigit((num & 0xF), 16);
+            final int firstNibble = (num >> 4) & 0xF;
+            final int secondNibble = num & 0xF;
+            hexDigits[index++] = uppercase ? UPPERCASE_CHARACTERS[firstNibble] : LOWERCASE_CHARACTERS[firstNibble];
+            hexDigits[index++] = uppercase ? UPPERCASE_CHARACTERS[secondNibble] : LOWERCASE_CHARACTERS[secondNibble];
         }
         return new String(hexDigits);
+    }
+
+    public static String encodeLowercase(byte[] input)
+    {
+        return encode(input, false);
+    }
+
+    public static String encodeUpperCase(byte[] input)
+    {
+        return encode(input, true);
     }
 
     public static byte[] decode(String hex)

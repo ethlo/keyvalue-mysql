@@ -27,31 +27,46 @@ import org.junit.Test;
 public class HexTest
 {
     final byte[] binary = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, -1, -2};
-    final String hex = "000102030405060708090a0b0c0d0e0f10111213fffe";
+    final String hexLower = "000102030405060708090a0b0c0d0e0f10111213fffe";
+    final String hexUpper = hexLower.toUpperCase();
 
     @Test
-    public void testEncode()
+    public void testEncodeLowerCase()
     {
-        final String hex = Hex.encode(binary);
-        assertThat(hex).isEqualTo(hex);
+        final String hex = Hex.encodeLowercase(binary);
+        assertThat(hex).isEqualTo(hexLower);
     }
 
     @Test
-    public void testDecode()
+    public void testEncodeUpperCase()
     {
-        final byte[] data = Hex.decode(hex);
+        final String hex = Hex.encodeUpperCase(binary);
+        assertThat(hex).isEqualTo(hexUpper);
+    }
+
+    @Test
+    public void testDecodeLowercase()
+    {
+        final byte[] data = Hex.decode(hexLower);
+        assertThat(data).isEqualTo(binary);
+    }
+
+    @Test
+    public void testDecodeUppercase()
+    {
+        final byte[] data = Hex.decode(hexUpper);
         assertThat(data).isEqualTo(binary);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testDecodeOddNumberOfCharacters()
     {
-        Hex.decode(hex + "1");
+        Hex.decode(hexLower + "1");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testDecodeNonHexCharacter()
     {
-        Hex.decode(hex + "q");
+        Hex.decode(hexLower + "q");
     }
 }

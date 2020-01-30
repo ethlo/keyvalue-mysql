@@ -27,7 +27,7 @@ public class HexKeyEncoder implements KeyEncoder
     @Override
     public String toString(byte[] key)
     {
-        return Hex.encode(key);
+        return Hex.encodeUpperCase(key);
     }
 
     @Override
