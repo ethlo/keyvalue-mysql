@@ -30,7 +30,7 @@
     </appender>
 
     <!-- Adjust to TRACE see all SQL performed -->
-    <logger name="org.springframework.jdbc" level="DEBUG" />
+    <logger name="org.springframework.jdbc" level="INFO" />
     <logger name="org.springframework.jdbc.datasource.DataSourceUtils" level="INFO" />
 
     <root level="INFO">
