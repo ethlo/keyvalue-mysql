@@ -5,7 +5,7 @@
     <parent>
         <artifactId>keyvalue</artifactId>
         <groupId>com.ethlo.keyvalue</groupId>
-        <version>1.1.2-SNAPSHOT</version>
+        <version>1.1.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <name>Key-Value - Compression Utils</name>
@@ -14,7 +14,7 @@
         <dependency>
             <groupId>com.ethlo.keyvalue</groupId>
             <artifactId>keyvalue-core</artifactId>
-            <version>1.1.2-SNAPSHOT</version>
+            <version>1.1.2</version>
         </dependency>
         <dependency>
             <groupId>org.iq80.snappy</groupId>
