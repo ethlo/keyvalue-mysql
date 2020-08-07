@@ -20,21 +20,17 @@ package com.ethlo.keyvalue.mysql;
  * #L%
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import org.junit.Test;
-
 import com.ethlo.keyvalue.SeekableIterator;
 import com.ethlo.keyvalue.cas.CasHolder;
 import com.ethlo.keyvalue.keys.ByteArrayKey;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.junit.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class MysqlClientTest extends AbstractTest
 {
@@ -65,9 +61,28 @@ public abstract class MysqlClientTest extends AbstractTest
     {
         final ByteArrayKey keyBytes = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 7});
         final byte[] valueBytes = "ThisIsTheDataToStoreSoLetsMakeItABitLonger".getBytes(StandardCharsets.UTF_8);
-        db.put(keyBytes, valueBytes);
+        db.putCas(new CasHolder<>(null, keyBytes, valueBytes));
         final byte[] retVal = db.get(keyBytes);
         assertThat(retVal).isEqualTo(valueBytes);
+    }
+
+    @Test
+    public void putAll()
+    {
+        final ByteArrayKey keyBytes1 = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 7});
+        final ByteArrayKey keyBytes2 = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 8});
+        final ByteArrayKey keyBytes3 = new ByteArrayKey(new byte[]{0, 1, 2, 3, 4, 5, 6, 9});
+        final byte[] valueBytes1 = "ThisIsTheDataToStoreSoLetsMakeItABitLonger1".getBytes(StandardCharsets.UTF_8);
+        final byte[] valueBytes2 = "ThisIsTheDataToStoreSoLetsMakeItABitLonger2".getBytes(StandardCharsets.UTF_8);
+        final byte[] valueBytes3 = "ThisIsTheDataToStoreSoLetsMakeItABitLonger3".getBytes(StandardCharsets.UTF_8);
+        final Map<ByteArrayKey, byte[]> map = new LinkedHashMap<>();
+        map.put(keyBytes1, valueBytes1);
+        map.put(keyBytes2, valueBytes2);
+        map.put(keyBytes3, valueBytes3);
+        db.putAll(map);
+        assertThat(db.get(keyBytes1)).isEqualTo(valueBytes1);
+        assertThat(db.get(keyBytes2)).isEqualTo(valueBytes2);
+        assertThat(db.get(keyBytes3)).isEqualTo(valueBytes3);
     }
 
     @Test
