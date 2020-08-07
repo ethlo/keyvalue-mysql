@@ -21,10 +21,7 @@ package com.ethlo.keyvalue.mysql;
  */
 
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,10 +42,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.support.DataAccessUtils;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.*;
 import org.springframework.util.Assert;
 
 import com.ethlo.keyvalue.BatchWriteWrapper;
@@ -73,14 +67,9 @@ public class MysqlClientImpl implements MysqlClient
     private final KeyEncoder keyEncoder;
     private final DataCompressor dataCompressor;
 
-    private final String getSql;
-    private final String getCasSql;
     private final String getCasSqlPrefix;
     private final String getCasSqlFirst;
-    private final String insertCasSql;
-    private final String updateCasSql;
     private final String deleteSql;
-    private final String clearSql;
     private final String insertOnDuplicateUpdateSql;
     private final String replaceInto;
 
@@ -88,6 +77,12 @@ public class MysqlClientImpl implements MysqlClient
     private final RowMapper<CasHolder<ByteArrayKey, byte[], Long>> casRowMapper;
 
     private final boolean useReplaceInto;
+
+    private final PreparedStatementCreatorFactory getDataCasPscFactory;
+    private final PreparedStatementCreatorFactory clearPscFactory;
+    private final PreparedStatementCreatorFactory insertCasPscFactory;
+    private final PreparedStatementCreatorFactory updateCasPscFactory;
+    private final PreparedStatementCreatorFactory getDataPscFactory;
 
     public MysqlClientImpl(String tableName, DataSource dataSource, KeyEncoder keyEncoder, DataCompressor dataCompressor)
     {
@@ -104,16 +99,16 @@ public class MysqlClientImpl implements MysqlClient
         Assert.notNull(dataSource, "dataSource cannot be null");
         this.tpl = new JdbcTemplate(dataSource);
 
-        this.getSql = "SELECT mvalue FROM " + tableName + " WHERE mkey = ?";
-        this.getCasSql = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey = ?";
+        String getSql = "SELECT mvalue FROM " + tableName + " WHERE mkey = ?";
+        String getCasSql = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey = ?";
         this.getCasSqlFirst = "SELECT mkey, mvalue, cas_column FROM " + tableName + " ORDER BY mkey";
         this.getCasSqlPrefix = "SELECT mkey, mvalue, cas_column FROM " + tableName + " WHERE mkey LIKE ?";
-        this.insertCasSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
-        this.updateCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
+        String insertCasSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?)";
+        String updateCasSql = "UPDATE " + tableName + " SET mvalue = ?, cas_column = cas_column + 1 WHERE mkey = ? AND cas_column = ?";
         this.insertOnDuplicateUpdateSql = "INSERT INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, ?) ON DUPLICATE KEY UPDATE mvalue=?, cas_column=cas_column+1";
         this.replaceInto = "REPLACE INTO " + tableName + " (mkey, mvalue, cas_column) VALUES(?, ?, COALESCE(0, cas_column + 1))";
         this.deleteSql = "DELETE FROM " + tableName + " WHERE mkey = ?";
-        this.clearSql = "DELETE FROM " + tableName;
+        String clearSql = "DELETE FROM " + tableName;
 
         this.rowMapper = (rs, rowNum) ->
         {
@@ -129,23 +124,24 @@ public class MysqlClientImpl implements MysqlClient
             final long cas = rs.getLong(3);
             return new CasHolder<>(cas, key, value);
         };
+
+        getDataPscFactory = new PreparedStatementCreatorFactory(getSql, Types.VARCHAR);
+        getDataCasPscFactory = new PreparedStatementCreatorFactory(getCasSql, Types.VARCHAR);
+        clearPscFactory = new PreparedStatementCreatorFactory(clearSql);
+        insertCasPscFactory = new PreparedStatementCreatorFactory(insertCasSql, Types.VARCHAR, Types.BINARY, Types.INTEGER);
+        updateCasPscFactory = new PreparedStatementCreatorFactory(updateCasSql, Types.BINARY, Types.VARCHAR, Types.INTEGER);
     }
 
     @Override
     public byte[] get(final ByteArrayKey key)
     {
-        return getData(key, getSql, rowMapper);
+        return getData(key, getDataPscFactory, rowMapper);
     }
 
-    private <T> T getData(final ByteArrayKey key, final String sql, final RowMapper<T> rowMapper)
+    private <T> T getData(final ByteArrayKey key, final PreparedStatementCreatorFactory factory, final RowMapper<T> rowMapper)
     {
-        final PreparedStatementCreator getPsc = connection ->
-        {
-            final PreparedStatement ps = connection.prepareStatement(sql);
-            final String strKey = keyEncoder.toString(key.getByteArray());
-            ps.setString(1, strKey);
-            return ps;
-        };
+        final String strKey = keyEncoder.toString(key.getByteArray());
+        final PreparedStatementCreator getPsc = factory.newPreparedStatementCreator(Collections.singletonList(strKey));
         return DataAccessUtils.singleResult(tpl.query(getPsc, rowMapper));
     }
 
@@ -225,8 +221,7 @@ public class MysqlClientImpl implements MysqlClient
     @Override
     public void clear()
     {
-        final PreparedStatementCreator creator = connection -> connection.prepareStatement(clearSql);
-        tpl.update(creator);
+        tpl.update(clearPscFactory.newPreparedStatementCreator(new Object[0]));
     }
 
     @Override
@@ -238,7 +233,7 @@ public class MysqlClientImpl implements MysqlClient
     @Override
     public CasHolder<ByteArrayKey, byte[], Long> getCas(final ByteArrayKey key)
     {
-        return getData(key, getCasSql, casRowMapper);
+        return getData(key, getDataCasPscFactory, casRowMapper);
     }
 
     @Override
@@ -256,18 +251,13 @@ public class MysqlClientImpl implements MysqlClient
 
     private void insertNewDueToNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
     {
-        final PreparedStatementCreator creator = connection -> {
-            final PreparedStatement ps = connection.prepareStatement(insertCasSql);
-            final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
-            ps.setString(1, strKey);
-            ps.setBytes(2, dataCompressor.compress(cas.getValue()));
-            ps.setLong(3, 0L);
-            return ps;
-        };
+        final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
+        final byte[] value = dataCompressor.compress(cas.getValue());
+        final PreparedStatementCreator psc = insertCasPscFactory.newPreparedStatementCreator(Arrays.asList(strKey, value, 0L));
 
         try
         {
-            tpl.update(creator);
+            tpl.update(psc);
         }
         catch (DuplicateKeyException exc)
         {
@@ -277,23 +267,15 @@ public class MysqlClientImpl implements MysqlClient
 
     private void updateWithNonNullCasValue(final CasHolder<ByteArrayKey, byte[], Long> cas)
     {
-        final PreparedStatementCreator creator = con ->
-        {
-            final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
-            final long casValue = cas.getCasValue();
-            final PreparedStatement ps = con.prepareStatement(updateCasSql);
-            ps.setBytes(1, dataCompressor.compress(cas.getValue()));
-            ps.setString(2, strKey);
-            ps.setLong(3, casValue);
-            return ps;
-        };
-        final int rowsChanged = tpl.update(creator);
+        final String strKey = keyEncoder.toString(cas.getKey().getByteArray());
+        final long casValue = cas.getCasValue();
+        final byte[] value = dataCompressor.compress(cas.getValue());
+
+        final int rowsChanged = tpl.update(updateCasPscFactory.newPreparedStatementCreator(Arrays.asList(value, strKey, casValue)));
         if (rowsChanged == 0)
         {
             throw new OptimisticLockingFailureException("Cannot update data for key " + cas.getKey() + " due to concurrent modification. Details: Attempted CAS value=" + cas.getCasValue());
         }
-
-        //return new CasHolder<>(cas.getCasValue(), cas.getKey(), cas.getValue());
     }
 
     @Override
